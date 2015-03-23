@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SimpleReportViewer</class>
+ <widget class="QWidget" name="SimpleReportViewer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>483</width>
+    <height>331</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QToolButton" name="btnPrint">
+         <property name="text">
+          <string>Print</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="btnPagePrev">
+         <property name="text">
+          <string>P-</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="sbPage">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="btnPageNext">
+         <property name="text">
+          <string>P+</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="btnZoomLess">
+         <property name="text">
+          <string>Z-</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="zoomSlider">
+         <property name="minimum">
+          <number>5</number>
+         </property>
+         <property name="maximum">
+          <number>50</number>
+         </property>
+         <property name="value">
+          <number>10</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="btnZoomMore">
+         <property name="text">
+          <string>Z+</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QGraphicsView" name="gv">
+       <property name="autoFillBackground">
+        <bool>true</bool>
+       </property>
+       <property name="backgroundBrush">
+        <brush brushstyle="NoBrush">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>btnPageNext</sender>
+   <signal>clicked()</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onBtnPageNextClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>222</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnPagePrev</sender>
+   <signal>clicked()</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onBtnPagePrevClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>148</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnPrint</sender>
+   <signal>clicked()</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onBtnPrintClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>28</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>zoomSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onZoomSliderChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>396</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnZoomLess</sender>
+   <signal>clicked()</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onBtnZoomLessClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>337</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnZoomMore</sender>
+   <signal>clicked()</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onBtnZoomMoreClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>458</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sbPage</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>SimpleReportViewer</receiver>
+   <slot>onSpinBoxPageChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>184</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>241</x>
+     <y>165</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>onBtnPrintClicked()</slot>
+  <slot>onBtnPagePrevClicked()</slot>
+  <slot>onBtnPageNextClicked()</slot>
+  <slot>onZoomSliderChanged()</slot>
+  <slot>onBtnZoomLessClicked()</slot>
+  <slot>onBtnZoomMoreClicked()</slot>
+  <slot>onSpinBoxPageChanged()</slot>
+ </slots>
+</ui>
