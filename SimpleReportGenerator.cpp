@@ -18,11 +18,11 @@ namespace SimpleReportLib {
       throw std::invalid_argument("Page height can't be less or equal to zero");
     }
 
-    if ((2*margin) >= _w)
+    if ((2*_margin) >= _w)
     {
       throw std::invalid_argument("Margin too large for page width");
     }
-    if ((2*margin) >= _h)
+    if ((2*_margin) >= _h)
     {
       throw std::invalid_argument("Margin too large for page height");
     }
