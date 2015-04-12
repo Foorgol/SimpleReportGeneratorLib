@@ -25,7 +25,7 @@ namespace SimpleReportLib {
 #define SYS_FONT "Arial"
 #define DEFAULT_PARSKIP__MM 1.0
 #define DEFAULT_LINESKIP_FAC 1.1
-#define HEADER_FOOTER_SKIP__MM 2.0
+#define HEADER_FOOTER_SKIP__MM 3.0
 
 //#define ACCURACY_FAC 50.0
 
@@ -43,10 +43,33 @@ namespace SimpleReportLib {
     THICK
   };
 
+  class HeaderFooterStrings
+  {
+  public:
+    static constexpr char TOKEN_CURPGNUM[] = "$#$";
+    static constexpr char TOKEN_TOTALPGNUM[] = "$##$";
+    static constexpr char TOKEN_CURDATE[] = "$__DATE__$";
+    static constexpr char TOKEN_CURTIME[] = "$__TIME__$";
+    void substTokens(int curPageNum, int totalPageCount);
+
+    HeaderFooterStrings();
+    virtual ~HeaderFooterStrings();
+    //void setHeader(QString l, QString c, QString r);
+    //void setFooter(QString l, QString c, QString r);
+    QString hl;
+    QString hc;
+    QString hr;
+    QString fl;
+    QString fc;
+    QString fr;
+  };
+
   class SIMPLEREPORTGENERATORSHARED_EXPORT SimpleReportGenerator
   {
 
   public:
+    static constexpr char DEFAULT_HEADER_STYLE_NAME[] = "Header";
+
     SimpleReportGenerator(double _w, double _h, double _margin);
     SimpleReportGenerator(const SimpleReportGenerator& orig);
     virtual ~SimpleReportGenerator();
@@ -60,8 +83,10 @@ namespace SimpleReportLib {
     void writeLine(QString txt, const std::shared_ptr<TextStyle> style, double skipAfter = 0.0, double skipBefore = 0.0);
     void skip(double skipAmount);
 
-    void setHeader(QString left, QString mid, QString right);
-    void setFooter(QString left, QString mid, QString right);
+    void setHeader(QString left, QString mid, QString right, int page=-1);
+    void setFooter(QString left, QString mid, QString right, int page=-1);
+    void setGlobalHeader(QString left, QString mid, QString right);
+    void setGlobalFooter(QString left, QString mid, QString right);
     void addTab(double pos, TAB_JUSTIFICATION just);
     void removeTab(double pos);
     void clearAllTabs();
@@ -73,6 +98,9 @@ namespace SimpleReportLib {
     bool hasSpaceForAnotherLine(const QString& styleName=QString(), double skipBefore = 0.0);
     bool hasSpaceForAnotherLine(std::shared_ptr<TextStyle> style = nullptr, double skipBefore = 0.0);
 
+    void insertHeaderAndFooter(int pageNum);
+    void applyHeaderAndFooterOnAllPages();
+
     double getPageWidth();
 
     std::shared_ptr<TextStyle> getTextStyle(const QString& styleName=QString()) const;
@@ -81,7 +109,8 @@ namespace SimpleReportLib {
 
   private:
     double setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT);
-    void insertHeaderAndFooterOnCurrentPage();
+    double getTextHeightForStyle(const QString& styleName=QString(), const QString& sampleText=QString());
+
     double w;
     double h;
     double margin;
@@ -89,18 +118,12 @@ namespace SimpleReportLib {
     int curPage;
     double curY;
     QGraphicsScene* page[MAX_NUM_PAGES];
+    std::unique_ptr<HeaderFooterStrings> headerFooter[MAX_NUM_PAGES];
+    HeaderFooterStrings globalHeaderFooter;
 
     QPen thinPen;
     QPen mediumPen;
     QPen thickPen;
-
-    QString headerLeft;
-    QString headerCenter;
-    QString headerRight;
-
-    QString footerLeft;
-    QString footerCenter;
-    QString footerRight;
 
     double maxY;
 

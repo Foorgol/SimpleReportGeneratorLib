@@ -3,8 +3,56 @@
 #include <stdexcept>
 
 #include <QGraphicsLineItem>
+#include <QHash>
 
 namespace SimpleReportLib {
+
+  constexpr char SimpleReportGenerator::DEFAULT_HEADER_STYLE_NAME[];
+
+  constexpr char HeaderFooterStrings::TOKEN_CURPGNUM[];
+  constexpr char HeaderFooterStrings::TOKEN_TOTALPGNUM[];
+  constexpr char HeaderFooterStrings::TOKEN_CURDATE[];
+  constexpr char HeaderFooterStrings::TOKEN_CURTIME[];
+
+//---------------------------------------------------------------------------
+
+  HeaderFooterStrings::HeaderFooterStrings()
+  {
+  }
+
+//---------------------------------------------------------------------------
+
+  HeaderFooterStrings::~HeaderFooterStrings()
+  {
+  }
+
+//---------------------------------------------------------------------------
+
+  void HeaderFooterStrings::substTokens(int curPageNum, int totalPageCount)
+  {
+    // create and fill a substitution table
+    QHash<QString, QString> substTab;
+    substTab.insert(TOKEN_CURPGNUM, QString::number(curPageNum+1));
+    substTab.insert(TOKEN_TOTALPGNUM, QString::number(totalPageCount));
+    substTab.insert(TOKEN_CURDATE, "99.88.4242"); // TODO: use real date
+    substTab.insert(TOKEN_CURTIME, "11:11:11"); // TODO: use real time
+
+    // apply substituion table to all strings
+    for (QString key : substTab.keys())
+    {
+      QString val = substTab.value(key);
+      hl.replace(key, val);
+      hc.replace(key, val);
+      hr.replace(key, val);
+      fl.replace(key, val);
+      fc.replace(key, val);
+      fr.replace(key, val);
+    }
+  }
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
   SimpleReportGenerator::SimpleReportGenerator(double _w, double _h, double _margin)
   {
@@ -38,12 +86,12 @@ namespace SimpleReportLib {
     curPage = -1;
 
     // initialize header and footer strings
-    headerLeft = "";
-    headerCenter = "";
-    headerRight = "";
-    footerLeft = "";
-    footerCenter = "";
-    footerRight = "";
+    globalHeaderFooter.hl = "";
+    globalHeaderFooter.hc = "";
+    globalHeaderFooter.hr = "";
+    globalHeaderFooter.fl = "";
+    globalHeaderFooter.fc = "";
+    globalHeaderFooter.fr = "";
 
     // initialize some drawing tools
     thinPen = QPen();
@@ -63,7 +111,7 @@ namespace SimpleReportLib {
     auto h2Style = styleLib.createChildStyle("H2");
     h2Style->setFontSize_MM(H2_FONT_SIZE__MM);
     h2Style->setBoldState(true);
-    auto headerStyle = styleLib.createChildStyle("Header");
+    auto headerStyle = styleLib.createChildStyle(DEFAULT_HEADER_STYLE_NAME);
     headerStyle->setFontSize_MM(PARA_FONT_SIZE__MM * 0.8);
     headerStyle->setItalicsState(true);
 
@@ -118,9 +166,10 @@ namespace SimpleReportLib {
     newScene->setSceneRect(0, 0, w, h);
     newScene->addRect(0,0,w,h,QPen(), QBrush(Qt::white));
 
-    // set header and footer
-    insertHeaderAndFooterOnCurrentPage();
-
+    // reserve space for header and footer
+    double headerFooterHeight = HEADER_FOOTER_SKIP__MM * ACCURACY_FAC + getTextHeightForStyle(DEFAULT_HEADER_STYLE_NAME);
+    curY += headerFooterHeight;
+    maxY -= headerFooterHeight;
 
     // return the ID of the new page
     return pageCount - 1;
@@ -245,83 +294,141 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::setHeader(QString left, QString mid, QString right)
+  void SimpleReportGenerator::setHeader(QString left, QString mid, QString right, int page)
   {
-    headerLeft = left.trimmed();
-    headerCenter = mid.trimmed();
-    headerRight = right.trimmed();
+    if (page < 0)
+    {
+      globalHeaderFooter.hl = left.trimmed();
+      globalHeaderFooter.hc = mid.trimmed();
+      globalHeaderFooter.hr = right.trimmed();
+      return;
+    }
+
+    if (page >= MAX_NUM_PAGES) return;
+
+    if (headerFooter[page] == nullptr)
+    {
+      headerFooter[page] = std::unique_ptr<HeaderFooterStrings>(new HeaderFooterStrings);
+    }
+
+    (headerFooter[page])->hl = left.trimmed();
+    (headerFooter[page])->hc = mid.trimmed();
+    (headerFooter[page])->hr = right.trimmed();
   }
 
   //---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::setFooter(QString left, QString mid, QString right)
+  void SimpleReportGenerator::setFooter(QString left, QString mid, QString right, int page)
   {
-    footerLeft = left.trimmed();
-    footerCenter = mid.trimmed();
-    footerRight = right.trimmed();
+    if (page < 0)
+    {
+      globalHeaderFooter.fl = left.trimmed();
+      globalHeaderFooter.fc = mid.trimmed();
+      globalHeaderFooter.fr = right.trimmed();
+      return;
+    }
+
+    if (page >= MAX_NUM_PAGES) return;
+
+    if (headerFooter[page] == nullptr)
+    {
+      headerFooter[page] = std::unique_ptr<HeaderFooterStrings>(new HeaderFooterStrings);
+    }
+
+    (headerFooter[page])->fl = left.trimmed();
+    (headerFooter[page])->fc = mid.trimmed();
+    (headerFooter[page])->fr = right.trimmed();
   }
 
-  //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::insertHeaderAndFooterOnCurrentPage()
+  void SimpleReportGenerator::setGlobalHeader(QString left, QString mid, QString right)
+  {
+    globalHeaderFooter.hl = left.trimmed();
+    globalHeaderFooter.hc = mid.trimmed();
+    globalHeaderFooter.hr = right.trimmed();
+  }
+
+//---------------------------------------------------------------------------
+
+  void SimpleReportGenerator::setGlobalFooter(QString left, QString mid, QString right)
+  {
+    globalHeaderFooter.fl = left.trimmed();
+    globalHeaderFooter.fc = mid.trimmed();
+    globalHeaderFooter.fr = right.trimmed();
+  }
+
+//---------------------------------------------------------------------------
+
+  void SimpleReportGenerator::insertHeaderAndFooter(int pageNum)
   {
     if (pageCount < 1) return;
 
-    QGraphicsScene* sc = page[curPage];
+    if (pageNum < 0) pageNum = curPage;
 
-    auto headerStyle = styleLib.getStyle("Header");
+    QGraphicsScene* sc = page[pageNum];
+
+    auto headerStyle = styleLib.getStyle(DEFAULT_HEADER_STYLE_NAME);
     if (headerStyle == nullptr) headerStyle = styleLib.getStyle();
 
     QFont headerFont = *(headerStyle->getFont());
 
-    double headerSkip = 0.0;
-    if (!(headerLeft.isEmpty()))
+    // determine the actual text for the header / footer
+    HeaderFooterStrings hfStrings;
+    if (headerFooter[pageNum] != nullptr)
     {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(headerLeft, headerFont);
-      double txtHeight = setTextPosAligned(margin, margin, txtItem);
-      headerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-    }
-    if (!(headerCenter.isEmpty()))
-    {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(headerCenter, headerFont);
-      double txtHeight = setTextPosAligned(w/2.0, margin, txtItem, CENTER);
-      headerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-    }
-    if (!(headerRight.isEmpty()))
-    {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(headerRight, headerFont);
-      double txtHeight = setTextPosAligned(w - margin, margin, txtItem, RIGHT);
-      headerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-    }
-    curY += headerSkip;
-    curY += HEADER_FOOTER_SKIP__MM * ACCURACY_FAC;
-
-    double footerSkip = 0.0;
-    if (!(footerLeft.isEmpty()))
-    {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(footerLeft, headerFont);
-      double txtHeight = setTextPosAligned(margin, maxY, txtItem);
-      footerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-      txtItem->moveBy(0, -txtHeight);
+      hfStrings = *(headerFooter[pageNum]);
+    } else {
+      hfStrings = globalHeaderFooter;
     }
 
-    if (!(footerCenter.isEmpty()))
+    // insert actual date, time, page numbers, etc
+    hfStrings.substTokens(pageNum, pageCount);
+
+    // write out the text for the header
+    if (!(hfStrings.hl.isEmpty()))
     {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(footerCenter, headerFont);
-      double txtHeight = setTextPosAligned(w/2.0, maxY, txtItem, CENTER);
-      footerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-      txtItem->moveBy(0, -txtHeight);
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.hl, headerFont);
+      setTextPosAligned(margin, margin, txtItem);
     }
-    if (!(footerRight.isEmpty()))
+    if (!(hfStrings.hc.isEmpty()))
     {
-      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(footerRight, headerFont);
-      double txtHeight = setTextPosAligned(w - margin, maxY, txtItem, RIGHT);
-      footerSkip = txtHeight * DEFAULT_LINESKIP_FAC;
-      txtItem->moveBy(0, -txtHeight);
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.hc, headerFont);
+      setTextPosAligned(w/2.0, margin, txtItem, CENTER);
+    }
+    if (!(hfStrings.hr.isEmpty()))
+    {
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.hr, headerFont);
+      setTextPosAligned(w - margin, margin, txtItem, RIGHT);
     }
 
-    maxY -= footerSkip;
-    maxY -= HEADER_FOOTER_SKIP__MM * ACCURACY_FAC;
+    // write out the text for the footer
+    if (!(hfStrings.fl.isEmpty()))
+    {
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fl, headerFont);
+      double txtHeight = setTextPosAligned(margin, h - margin, txtItem);
+      txtItem->moveBy(0, -txtHeight);
+    }
+    if (!(hfStrings.fc.isEmpty()))
+    {
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fc, headerFont);
+      double txtHeight = setTextPosAligned(w/2.0, h - margin, txtItem, CENTER);
+      txtItem->moveBy(0, -txtHeight);
+    }
+    if (!(hfStrings.fr.isEmpty()))
+    {
+      QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fr, headerFont);
+      double txtHeight = setTextPosAligned(w - margin, h - margin, txtItem, RIGHT);
+      txtItem->moveBy(0, -txtHeight);
+    }
+  }
+
+//---------------------------------------------------------------------------
+
+  void SimpleReportGenerator::applyHeaderAndFooterOnAllPages()
+  {
+    if (pageCount < 0) return;
+    for (int pg = 0; pg < pageCount; ++pg) insertHeaderAndFooter(pg);
   }
 
   //---------------------------------------------------------------------------
@@ -405,7 +512,7 @@ namespace SimpleReportLib {
     if (style == nullptr) style = styleLib.getStyle();
     QFont fnt = *(style->getFont());
 
-    return (curY + fnt.pixelSize() + skipBefore * ACCURACY_FAC) <= maxY;
+    return (curY + fnt.pixelSize() + skipBefore * ACCURACY_FAC) < maxY;
   }
 
   //---------------------------------------------------------------------------
@@ -430,6 +537,33 @@ namespace SimpleReportLib {
   }
 
   //---------------------------------------------------------------------------
+
+  double SimpleReportGenerator::getTextHeightForStyle(const QString& styleName, const QString& sampleText)
+  {
+    // we need a QGraphicsScene; if none has been created yet, we return an
+    // error value
+    if (pageCount < 0) return -1;
+    QGraphicsScene* sc = page[curPage];
+
+    // get the style
+    auto style = styleLib.getStyle(styleName);
+    if (style == nullptr) style = styleLib.getStyle();
+    auto fnt = style->getFont();
+
+    // shall we use a specific text for determining the height?
+    // Or shall we use a worst case default?
+    QString txt = sampleText;
+    if (txt.isEmpty()) txt = "X²g^j_";
+
+    // add the text to the scene, determine the heigth and
+    // immediately remove it
+    QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(txt, *fnt);
+    double result = txtItem->boundingRect().height();
+    sc->removeItem(txtItem);
+    delete txtItem;
+
+    return result;
+  }
 
   //---------------------------------------------------------------------------
 
