@@ -4,6 +4,7 @@
 
 #include <QGraphicsLineItem>
 #include <QHash>
+#include <QDateTime>
 
 namespace SimpleReportLib {
 
@@ -30,12 +31,17 @@ namespace SimpleReportLib {
 
   void HeaderFooterStrings::substTokens(int curPageNum, int totalPageCount)
   {
+    // determine local time and date and convert them into strings
+    QDateTime localDateTime = QDateTime::currentDateTime();
+    QString curTime = localDateTime.toString("HH:mm");
+    QString curDate = localDateTime.toString("dd.MM.yyyy");
+
     // create and fill a substitution table
     QHash<QString, QString> substTab;
     substTab.insert(TOKEN_CURPGNUM, QString::number(curPageNum+1));
     substTab.insert(TOKEN_TOTALPGNUM, QString::number(totalPageCount));
-    substTab.insert(TOKEN_CURDATE, "99.88.4242"); // TODO: use real date
-    substTab.insert(TOKEN_CURTIME, "11:11:11"); // TODO: use real time
+    substTab.insert(TOKEN_CURDATE, curDate);
+    substTab.insert(TOKEN_CURTIME, curTime);
 
     // apply substituion table to all strings
     for (QString key : substTab.keys())
