@@ -475,9 +475,32 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  void SimpleReportGenerator::addHorLine_absPos(double yPos, LINE_TYPE lt) const
+  {
+    double lineWidth = THIN_LINE_WIDTH__MM;
+    if (lt == MED) lineWidth = MEDIUM_LINE_WIDTH__MM;
+    if (lt == THICK) lineWidth = THICK_LINE_WIDTH__MM;
+    lineWidth *= ACCURACY_FAC;
+
+    double y = yPos * ACCURACY_FAC;
+    QGraphicsLineItem* line = page[curPage]->addLine(margin, y, w - margin, y);
+    QPen p = QPen();
+    p.setWidth(lineWidth);
+    line->setPen(p);
+  }
+
+  //---------------------------------------------------------------------------
+
   void SimpleReportGenerator::skip(double skipAmount)
   {
     curY += skipAmount * ACCURACY_FAC;
+  }
+
+  //---------------------------------------------------------------------------
+
+  void SimpleReportGenerator::warpTo(double newAbsYPos)
+  {
+    curY = newAbsYPos * ACCURACY_FAC;
   }
 
   //---------------------------------------------------------------------------

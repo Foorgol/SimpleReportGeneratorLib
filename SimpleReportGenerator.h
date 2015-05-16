@@ -82,6 +82,7 @@ namespace SimpleReportLib {
     void writeLine(QString txt, const QString& styleName=QString(), double skipAfter = 0.0, double skipBefore = 0.0);
     void writeLine(QString txt, const std::shared_ptr<TextStyle> style, double skipAfter = 0.0, double skipBefore = 0.0);
     void skip(double skipAmount);
+    void warpTo(double newAbsYPos);
 
     void setHeader(QString left, QString mid, QString right, int page=-1);
     void setFooter(QString left, QString mid, QString right, int page=-1);
@@ -94,6 +95,7 @@ namespace SimpleReportLib {
     void popTabs();
 
     void addHorLine(LINE_TYPE lt=MED, double skipAfter=0.0, double skipBefore=0.0);
+    void addHorLine_absPos(double yPos, LINE_TYPE lt=MED) const;
 
     bool hasSpaceForAnotherLine(const QString& styleName=QString(), double skipBefore = 0.0);
     bool hasSpaceForAnotherLine(std::shared_ptr<TextStyle> style = nullptr, double skipBefore = 0.0);
