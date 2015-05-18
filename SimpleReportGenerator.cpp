@@ -168,9 +168,11 @@ namespace SimpleReportLib {
     ++curPage;
 
     // limit the scene size to the paper size
-    // and add a "page frame"
+    // and add a "page frame" for zooming as a background
+    // color in the viewer
+    QPen pen(Qt::white, 0);
     newScene->setSceneRect(0, 0, w, h);
-    newScene->addRect(0,0,w,h,QPen(), QBrush(Qt::white));
+    newScene->addRect(0,0,w,h,pen, QBrush(Qt::white));
 
     // reserve space for header and footer
     double headerFooterHeight = HEADER_FOOTER_SKIP__MM * ACCURACY_FAC + getTextHeightForStyle(DEFAULT_HEADER_STYLE_NAME);
