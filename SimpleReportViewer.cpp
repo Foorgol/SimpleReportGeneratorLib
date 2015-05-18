@@ -76,11 +76,39 @@ void SimpleReportViewer::onBtnPrintClicked()
 {
     QPrinter printer;
 
+    // initialize the page ranges for the print dialog
+    int numPages = report->getPageCount();
+    printer.setFromTo(1, numPages);
+    printer.setPrintRange(QPrinter::AllPages);
+
     if (QPrintDialog(&printer).exec() == QDialog::Accepted) {
-        QPainter painter(&printer);
-        painter.setRenderHint(QPainter::Antialiasing);
-        QGraphicsScene* scene = report->getPage(curPage);
+      // get the page range from the printer dialog
+      int firstPage = printer.fromPage();
+      int lastPage = printer.toPage();
+
+      if (firstPage > 0)
+      {
+        --firstPage;   // dialog starts counting at 1, we start counting at zero
+      }
+      if (lastPage > 0)
+      {
+        --lastPage;
+      } else {
+        lastPage = numPages-1;
+      }
+
+      // the actual printing
+      QPainter painter(&printer);
+      painter.setRenderHint(QPainter::Antialiasing);
+      for (int pg=firstPage; pg <= lastPage; ++pg)
+      {
+        QGraphicsScene* scene = report->getPage(pg);
         scene->render(&painter);
+        if (pg != lastPage)
+        {
+          printer.newPage();
+        }
+      }
     }
 }
 
