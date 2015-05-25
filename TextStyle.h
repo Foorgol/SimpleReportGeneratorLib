@@ -6,9 +6,11 @@
 #include <QColor>
 #include <QFont>
 
+#include "simplereportgenerator_global.h"
+
 namespace SimpleReportLib {
 
-class TextStyle
+class SIMPLEREPORTGENERATORSHARED_EXPORT TextStyle
 {
   friend class TextStyleLib;
 

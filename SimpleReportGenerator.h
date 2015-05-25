@@ -43,7 +43,7 @@ namespace SimpleReportLib {
     THICK
   };
 
-  class HeaderFooterStrings
+  class SIMPLEREPORTGENERATORSHARED_EXPORT HeaderFooterStrings
   {
   public:
     static constexpr char TOKEN_CURPGNUM[] = "$#$";

@@ -8,7 +8,7 @@
 
 namespace SimpleReportLib {
 
-class TextStyleLib
+class SIMPLEREPORTGENERATORSHARED_EXPORT TextStyleLib
 {
 public:
   TextStyleLib();
