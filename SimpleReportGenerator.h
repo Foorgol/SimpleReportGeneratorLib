@@ -1,6 +1,8 @@
 #ifndef SIMPLEREPORTGENERATOR_H
 #define SIMPLEREPORTGENERATOR_H
 
+#include <tuple>
+
 #include <QPen>
 #include <QFont>
 #include <QHash>
@@ -13,6 +15,8 @@
 
 #include "TextStyle.h"
 #include "TextStyleLib.h"
+
+using namespace std;
 
 namespace SimpleReportLib {
 #define MAX_NUM_PAGES 100
@@ -104,14 +108,39 @@ namespace SimpleReportLib {
     void applyHeaderAndFooterOnAllPages();
 
     double getPageWidth();
+    double getPageHeight();
+
+    double getUsablePageWidth() const;
+    double getUsablePageHeight() const;
 
     std::shared_ptr<TextStyle> getTextStyle(const QString& styleName=QString()) const;
     std::shared_ptr<TextStyle> createChildTextStyle(const QString &childName, const QString &parentName=QString());
 
+    // functions for free positioning of elements
+    inline void drawLine(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED)
+    {
+      drawLine_internalUnits(x0 * ACCURACY_FAC, y0 * ACCURACY_FAC, x1 * ACCURACY_FAC, y1 * ACCURACY_FAC, lt);
+    }
+
+    inline void drawHorLine(double x0, double y0, double len, LINE_TYPE lt=MED)
+    {
+      drawLine(x0, y0, x0 + len, y0, lt);
+    }
+    inline void drawVertLine(double x0, double y0, double len, LINE_TYPE lt=MED)
+    {
+      drawLine(x0, y0, x0, y0 + len, lt);
+    }
+
+    tuple<double, double> drawText(double x0, double y0, QString txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
+    tuple<double, double> drawText(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align=LEFT) const;
 
   private:
-    double setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT);
+    tuple<double, double> setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
     double getTextHeightForStyle(const QString& styleName=QString(), const QString& sampleText=QString());
+    inline void drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED) const;
+    tuple<double, double> drawText__internalUnits(double x0, double y0, QString txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
+    tuple<double, double> drawText__internalUnits(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align=LEFT) const;
+    double lineType2Width(LINE_TYPE lt) const;
 
     double w;
     double h;
