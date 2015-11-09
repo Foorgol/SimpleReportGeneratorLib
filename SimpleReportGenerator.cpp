@@ -46,15 +46,41 @@ namespace SimpleReportLib {
     substTab.insert(TOKEN_CURTIME, curTime);
 
     // apply substituion table to all strings
+    substTokensInPlace(hl, substTab);
+    substTokensInPlace(hc, substTab);
+    substTokensInPlace(hr, substTab);
+    substTokensInPlace(fl, substTab);
+    substTokensInPlace(fc, substTab);
+    substTokensInPlace(fr, substTab);
+  }
+
+  //---------------------------------------------------------------------------
+
+  void HeaderFooterStrings::substTokensInPlace(QString& s, int idxCurPage, int totalPageCount)
+  {
+    // determine local time and date and convert them into strings
+    QDateTime localDateTime = QDateTime::currentDateTime();
+    QString curTime = localDateTime.toString("HH:mm");
+    QString curDate = localDateTime.toString("dd.MM.yyyy");
+
+    // create and fill a substitution table
+    QHash<QString, QString> substTab;
+    substTab.insert(TOKEN_CURPGNUM, QString::number(idxCurPage+1));
+    substTab.insert(TOKEN_TOTALPGNUM, QString::number(totalPageCount));
+    substTab.insert(TOKEN_CURDATE, curDate);
+    substTab.insert(TOKEN_CURTIME, curTime);
+
+    substTokensInPlace(s, substTab);
+  }
+
+  //---------------------------------------------------------------------------
+
+  void HeaderFooterStrings::substTokensInPlace(QString& s, const QHash<QString, QString>& substTab)
+  {
     for (QString key : substTab.keys())
     {
       QString val = substTab.value(key);
-      hl.replace(key, val);
-      hc.replace(key, val);
-      hr.replace(key, val);
-      fl.replace(key, val);
-      fc.replace(key, val);
-      fr.replace(key, val);
+      s.replace(key, val);
     }
   }
 
@@ -128,8 +154,8 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  SimpleReportGenerator::SimpleReportGenerator(const SimpleReportGenerator& orig) {
-  }
+  //SimpleReportGenerator::SimpleReportGenerator(const SimpleReportGenerator& orig) {
+  //}
 
   //---------------------------------------------------------------------------
 
@@ -213,7 +239,7 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::writeLine(QString txt, std::shared_ptr<TextStyle> style, double skipAfter, double skipBefore)
+  void SimpleReportGenerator::writeLine(QString txt, TextStyle* style, double skipAfter, double skipBefore)
   {
     if (style == nullptr) style = styleLib.getStyle();
 
@@ -235,8 +261,8 @@ namespace SimpleReportLib {
     {
       // no tabs defined, simply write out the text
       QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
-      double txtWidth;
-      tie(txtWidth, txtHeight) = setTextPosAligned(margin, curY, txtItem);
+      auto bb = setTextPosAligned(margin, curY, txtItem);
+      txtHeight = bb.height();
     } else {
       QStringList txtChunk = txt.split("\t");
 
@@ -244,8 +270,8 @@ namespace SimpleReportLib {
       // and: we always have at least one chunk, even if there is no tab in
       // the text
       QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txtChunk.at(0).trimmed(), fnt);
-      double txtWidth;
-      tie(txtWidth, txtHeight) = setTextPosAligned(margin, curY, txtItem);
+      auto bb = setTextPosAligned(margin, curY, txtItem);
+      txtHeight = bb.height();
       txtChunk.removeFirst();
 
       // if we have more chunks than tabs, simply merge the last chunks back together
@@ -266,9 +292,9 @@ namespace SimpleReportLib {
         if (td.just == TAB_CENTER) align = CENTER;
         if (td.just == TAB_RIGHT) align = RIGHT;
         txtItem = pg->addSimpleText(txtChunk.at(tabIndex).trimmed(), fnt);
-        double chunkWidth;
         double chunkHeight;
-        tie(chunkWidth, chunkHeight) = setTextPosAligned(td.pos * ACCURACY_FAC + margin, curY, txtItem, align);
+        auto bb = setTextPosAligned(td.pos * ACCURACY_FAC + margin, curY, txtItem, align);
+        chunkHeight = bb.height();
         txtHeight = qMax(txtHeight, chunkHeight);
       }
     }
@@ -283,25 +309,24 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  tuple<double, double> SimpleReportGenerator::setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align) const
+  QRectF SimpleReportGenerator::setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align) const
   {
-    QRectF bb = txt->boundingRect();
-    double txtWidth = bb.width();
+    double txtWidth = txt->boundingRect().width();
 
     if (align == LEFT)
     {
       txt->setPos(x, y);
-      return make_tuple(bb.width(), bb.height());
+      return txt->boundingRect();
     }
 
     if (align == RIGHT)
     {
       txt->setPos(x - txtWidth, y);
-      return make_tuple(bb.width(), bb.height());
+      return txt->boundingRect();
     }
 
     txt->setPos(x - txtWidth/2.0, y);
-    return make_tuple(bb.width(), bb.height());
+    return txt->boundingRect();
   }
 
   //---------------------------------------------------------------------------
@@ -418,25 +443,22 @@ namespace SimpleReportLib {
     if (!(hfStrings.fl.isEmpty()))
     {
       QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fl, headerFont);
-      double txtWidth;
-      double txtHeight;
-      tie(txtWidth, txtHeight) = setTextPosAligned(margin, h - margin, txtItem);
+      auto bb = setTextPosAligned(margin, h - margin, txtItem);
+      double txtHeight = bb.height();
       txtItem->moveBy(0, -txtHeight);
     }
     if (!(hfStrings.fc.isEmpty()))
     {
       QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fc, headerFont);
-      double txtWidth;
-      double txtHeight;
-      tie(txtWidth, txtHeight) = setTextPosAligned(w/2.0, h - margin, txtItem, CENTER);
+      auto bb = setTextPosAligned(w/2.0, h - margin, txtItem, CENTER);
+      double txtHeight = bb.height();
       txtItem->moveBy(0, -txtHeight);
     }
     if (!(hfStrings.fr.isEmpty()))
     {
       QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(hfStrings.fr, headerFont);
-      double txtWidth;
-      double txtHeight;
-      tie(txtWidth, txtHeight) = setTextPosAligned(w - margin, h - margin, txtItem, RIGHT);
+      auto bb = setTextPosAligned(w - margin, h - margin, txtItem, RIGHT);
+      double txtHeight = bb.height();
       txtItem->moveBy(0, -txtHeight);
     }
   }
@@ -530,7 +552,7 @@ namespace SimpleReportLib {
     return hasSpaceForAnotherLine(style, skipBefore);
   }
 
-  bool SimpleReportGenerator::hasSpaceForAnotherLine(std::shared_ptr<TextStyle> style, double skipBefore)
+  bool SimpleReportGenerator::hasSpaceForAnotherLine(TextStyle* style, double skipBefore)
   {
     if (style == nullptr) style = styleLib.getStyle();
     QFont fnt = *(style->getFont());
@@ -568,14 +590,14 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  std::shared_ptr<TextStyle> SimpleReportGenerator::getTextStyle(const QString &styleName) const
+  TextStyle* SimpleReportGenerator::getTextStyle(const QString &styleName) const
   {
     return styleLib.getStyle(styleName);
   }
 
   //---------------------------------------------------------------------------
 
-  std::shared_ptr<TextStyle> SimpleReportGenerator::createChildTextStyle(const QString &childName, const QString &parentName)
+  TextStyle* SimpleReportGenerator::createChildTextStyle(const QString &childName, const QString &parentName)
   {
     return styleLib.createChildStyle(childName, parentName);
   }
@@ -626,7 +648,7 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  tuple<double, double> SimpleReportGenerator::drawText__internalUnits(double x0, double y0, QString txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
+  QRectF SimpleReportGenerator::drawText__internalUnits(double x0, double y0, const QString& txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
   {
     auto style = styleLib.getStyle(styleName);
     if (style == nullptr) style = styleLib.getStyle(); // fallback to root style
@@ -636,7 +658,7 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  tuple<double, double> SimpleReportGenerator::drawText__internalUnits(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align) const
+  QRectF SimpleReportGenerator::drawText__internalUnits(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align) const
   {
     // Select the right font
     QFont fnt;
@@ -649,33 +671,32 @@ namespace SimpleReportLib {
 
     QGraphicsScene* pg = page[curPage];
     QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
-    double txtWidth;
-    double txtHeight;
-    tie(txtWidth, txtHeight) = setTextPosAligned(x0, y0, txtItem, align);
 
-    return make_tuple(txtWidth, txtHeight);
+    return setTextPosAligned(x0, y0, txtItem, align);
   }
 
   //---------------------------------------------------------------------------
 
-  tuple<double, double> SimpleReportGenerator::drawText(double x0, double y0, QString txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
+  QRectF SimpleReportGenerator::drawText(double x0, double y0, const QString& txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
   {
-    double internalWidth;
-    double internalHeight;
-    tie(internalWidth, internalHeight) = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, styleName, align);
+    QRectF internalRect = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, styleName, align);
 
-    return make_tuple(internalWidth / ACCURACY_FAC, internalHeight / ACCURACY_FAC);
+    double _x0, _y0, _w, _h;
+    internalRect.getRect(&_x0, &_y0, &_w, &_h);
+
+    return QRectF(_x0 / ACCURACY_FAC, _y0 / ACCURACY_FAC, _w / ACCURACY_FAC, _h / ACCURACY_FAC);
   }
 
   //---------------------------------------------------------------------------
 
-  tuple<double, double> SimpleReportGenerator::drawText(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align) const
+  QRectF SimpleReportGenerator::drawText(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align) const
   {
-    double internalWidth;
-    double internalHeight;
-    tie(internalWidth, internalHeight) = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, style, align);
+    QRectF internalRect = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, style, align);
 
-    return make_tuple(internalWidth / ACCURACY_FAC, internalHeight / ACCURACY_FAC);
+    double _x0, _y0, _w, _h;
+    internalRect.getRect(&_x0, &_y0, &_w, &_h);
+
+    return QRectF(_x0 / ACCURACY_FAC, _y0 / ACCURACY_FAC, _w / ACCURACY_FAC, _h / ACCURACY_FAC);
   }
 
   //---------------------------------------------------------------------------

@@ -1,8 +1,6 @@
 #ifndef SIMPLEREPORTGENERATOR_H
 #define SIMPLEREPORTGENERATOR_H
 
-#include <tuple>
-
 #include <QPen>
 #include <QFont>
 #include <QHash>
@@ -55,6 +53,8 @@ namespace SimpleReportLib {
     static constexpr char TOKEN_CURDATE[] = "$__DATE__$";
     static constexpr char TOKEN_CURTIME[] = "$__TIME__$";
     void substTokens(int curPageNum, int totalPageCount);
+    static void substTokensInPlace(QString& s, int idxCurPage, int totalPageCount);
+    static void substTokensInPlace(QString& s, const QHash<QString, QString>& substTab);
 
     HeaderFooterStrings();
     virtual ~HeaderFooterStrings();
@@ -75,7 +75,7 @@ namespace SimpleReportLib {
     static constexpr char DEFAULT_HEADER_STYLE_NAME[] = "Header";
 
     SimpleReportGenerator(double _w, double _h, double _margin);
-    SimpleReportGenerator(const SimpleReportGenerator& orig);
+    //SimpleReportGenerator(const SimpleReportGenerator& orig);
     virtual ~SimpleReportGenerator();
     void deleteAllPages();
 
@@ -84,7 +84,7 @@ namespace SimpleReportLib {
     QGraphicsScene* getPage(int pageNum);
 
     void writeLine(QString txt, const QString& styleName=QString(), double skipAfter = 0.0, double skipBefore = 0.0);
-    void writeLine(QString txt, const std::shared_ptr<TextStyle> style, double skipAfter = 0.0, double skipBefore = 0.0);
+    void writeLine(QString txt, TextStyle* style, double skipAfter = 0.0, double skipBefore = 0.0);
     void skip(double skipAmount);
     void warpTo(double newAbsYPos);
 
@@ -102,7 +102,7 @@ namespace SimpleReportLib {
     void addHorLine_absPos(double yPos, LINE_TYPE lt=MED) const;
 
     bool hasSpaceForAnotherLine(const QString& styleName=QString(), double skipBefore = 0.0);
-    bool hasSpaceForAnotherLine(std::shared_ptr<TextStyle> style = nullptr, double skipBefore = 0.0);
+    bool hasSpaceForAnotherLine(TextStyle* style = nullptr, double skipBefore = 0.0);
 
     void insertHeaderAndFooter(int pageNum);
     void applyHeaderAndFooterOnAllPages();
@@ -113,8 +113,8 @@ namespace SimpleReportLib {
     double getUsablePageWidth() const;
     double getUsablePageHeight() const;
 
-    std::shared_ptr<TextStyle> getTextStyle(const QString& styleName=QString()) const;
-    std::shared_ptr<TextStyle> createChildTextStyle(const QString &childName, const QString &parentName=QString());
+    TextStyle* getTextStyle(const QString& styleName=QString()) const;
+    TextStyle* createChildTextStyle(const QString &childName, const QString &parentName=QString());
 
     // functions for free positioning of elements
     inline void drawLine(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED)
@@ -131,15 +131,18 @@ namespace SimpleReportLib {
       drawLine(x0, y0, x0, y0 + len, lt);
     }
 
-    tuple<double, double> drawText(double x0, double y0, QString txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
-    tuple<double, double> drawText(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF drawText(double x0, double y0, const QString& txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF drawText(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
+
+    // disable copy constructor, just for testing
+    SimpleReportGenerator(const SimpleReportGenerator &orig) = delete;
 
   private:
-    tuple<double, double> setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
     double getTextHeightForStyle(const QString& styleName=QString(), const QString& sampleText=QString());
-    inline void drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED) const;
-    tuple<double, double> drawText__internalUnits(double x0, double y0, QString txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
-    tuple<double, double> drawText__internalUnits(double x0, double y0, QString txt, const std::shared_ptr<TextStyle>& style, HOR_TXT_ALIGNMENT align=LEFT) const;
+    void drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED) const;
+    QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
     double lineType2Width(LINE_TYPE lt) const;
 
     double w;

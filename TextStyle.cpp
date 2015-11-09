@@ -141,7 +141,7 @@ std::unique_ptr<QPen> TextStyle::getPen() const
 
 //---------------------------------------------------------------------------
 
-TextStyle::TextStyle(std::shared_ptr<TextStyle> _parent)
+TextStyle::TextStyle(TextStyle* _parent)
   :fontName(), fontSize_MM(-1.0),
     boldState(-1), italicsState(-1), fontColor(nullptr), parent(_parent)
 {

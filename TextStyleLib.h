@@ -1,6 +1,9 @@
 #ifndef TEXTSTYLELIB_H
 #define TEXTSTYLELIB_H
 
+#include <memory>
+#include <map>
+
 #include <QHash>
 #include <QString>
 
@@ -13,12 +16,12 @@ class SIMPLEREPORTGENERATORSHARED_EXPORT TextStyleLib
 public:
   TextStyleLib();
 
-  std::shared_ptr<TextStyle> getStyle(const QString &styleName=QString()) const;
-  std::shared_ptr<TextStyle> createChildStyle(const QString &childName, const QString &parentName=QString());
+  TextStyle* getStyle(const QString &styleName=QString()) const;
+  TextStyle* createChildStyle(const QString &childName, const QString &parentName=QString());
 
 private:
-  QHash<QString, std::shared_ptr<TextStyle>> name2style;
-  std::shared_ptr<TextStyle> root;
+  std::map<QString, upTextStyle> name2style;
+  upTextStyle root;
 };
 
 }

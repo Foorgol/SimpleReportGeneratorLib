@@ -43,13 +43,15 @@ private:
   int boldState;     // 0 = not bold; 1 = bold; -1 = from parent
   int italicsState;     // 0 = not italics; 1 = italics; -1 = from parent
   std::unique_ptr<QColor> fontColor;   // nullptr = from parent
-  std::shared_ptr<TextStyle> parent;   // nullptr = root element
+  TextStyle* parent;   // nullptr = root element
 
   // private constructor(s) to force using the
   // createXXX-functions of the text style lib
   TextStyle();
-  TextStyle(std::shared_ptr<TextStyle> _parent);
+  TextStyle(TextStyle* _parent);
 };
+
+typedef std::unique_ptr<TextStyle> upTextStyle;
 
 }
 #endif // TEXTSTYLE_H
