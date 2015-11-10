@@ -137,6 +137,10 @@ namespace SimpleReportLib {
     // disable copy constructor, just for testing
     SimpleReportGenerator(const SimpleReportGenerator &orig) = delete;
 
+    // determine the bounding box of a given text without adding
+    // the text to the scene
+    QSizeF getTextDimensions_MM(const QString& txt, const TextStyle* style);
+
   private:
     QRectF setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
     double getTextHeightForStyle(const QString& styleName=QString(), const QString& sampleText=QString());

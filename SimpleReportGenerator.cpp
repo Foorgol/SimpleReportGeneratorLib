@@ -701,6 +701,30 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  QSizeF SimpleReportGenerator::getTextDimensions_MM(const QString& txt, const TextStyle* style)
+  {
+    // we need a QGraphicsScene; if none has been created yet, we return an
+    // error value
+    if (pageCount < 0) return QSizeF();
+    QGraphicsScene* sc = page[curPage];
+
+    // get the style
+    if (style == nullptr) style = styleLib.getStyle();
+    auto fnt = style->getFont();
+
+    // add the text to the scene, determine the size and
+    // immediately remove it
+    QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(txt, *fnt);
+    QSizeF result_internalUnits = txtItem->boundingRect().size();
+    sc->removeItem(txtItem);
+    delete txtItem;
+
+    // convert internal units to external units (mm) and return the result
+    return (result_internalUnits / ACCURACY_FAC);
+  }
+
+  //---------------------------------------------------------------------------
+
   double SimpleReportGenerator::lineType2Width(LINE_TYPE lt) const
   {
     double lineWidth = THIN_LINE_WIDTH__MM;
