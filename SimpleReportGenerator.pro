@@ -27,7 +27,8 @@ SOURCES += SimpleReportGenerator.cpp \
     TableWriter.cpp \
     SimpleReportViewer.cpp \
     TextStyle.cpp \
-    TextStyleLib.cpp
+    TextStyleLib.cpp \
+    ReportGraphicsView.cpp
 
 HEADERS += SimpleReportGenerator.h\
         simplereportgenerator_global.h \
@@ -35,7 +36,8 @@ HEADERS += SimpleReportGenerator.h\
     TableWriter.h \
     SimpleReportViewer.h \
     TextStyle.h \
-    TextStyleLib.h
+    TextStyleLib.h \
+    ReportGraphicsView.h
 
 unix {
     target.path = /usr/lib

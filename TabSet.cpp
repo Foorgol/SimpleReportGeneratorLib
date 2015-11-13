@@ -113,7 +113,7 @@ namespace SimpleReportLib {
 
   TabDef::TabDef(double _pos, TAB_JUSTIFICATION _just)
   {
-    if (pos < 0)
+    if (_pos < 0)
     {
       throw std::invalid_argument("Tab position can't be negative");
     }

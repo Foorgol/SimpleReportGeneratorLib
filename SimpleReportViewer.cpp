@@ -22,6 +22,12 @@ SimpleReportViewer::SimpleReportViewer(QWidget *parent) :
 
   ui->gv->setBackgroundBrush(QBrush(Qt::lightGray));
 
+  // connect signals and slots for view zoom factor changes
+  connect(ui->gv, SIGNAL(viewZoomFactorChanged(int)), this, SLOT(onGraphicsViewZoomFactorChanged(int)), Qt::DirectConnection);
+
+  // start with a default zoom factor of 100% (page fit)
+  ui->gv->setZoomFactor(100);
+
   updateButtons();
 }
 
@@ -51,25 +57,6 @@ bool SimpleReportViewer::setReport(SimpleReportGenerator *r)
   updateButtons();
 
   return true;
-}
-
-//---------------------------------------------------------------------------
-
-void SimpleReportViewer::paintEvent(QPaintEvent* event)
-{
-    if (report == nullptr) return;
-
-    // maximaze the scene on the screen
-    QRectF sceneExtends = ui->gv->sceneRect();
-    double scaleX = ui->gv->width() / sceneExtends.width();
-    double scaleY = ui->gv->height() / sceneExtends.height();
-    double scale = std::min(scaleX, scaleY);
-
-    // get an additional zoom factor between 1.0 and 5.0
-    // from the slider
-    double viewScale = ui->zoomSlider->value() / 10.0;
-    ui->gv->resetTransform();
-    ui->gv->scale(scale * viewScale, scale * viewScale);
 }
 
 //---------------------------------------------------------------------------
@@ -138,6 +125,7 @@ bool SimpleReportViewer::showPage(int pgNum)
   if (pgNum >= report->getPageCount()) return false;
 
   ui->gv->setScene(report->getPage(pgNum));
+  ui->gv->recalcZoom();
   curPage = pgNum;
   updateButtons();
   return true;
@@ -182,29 +170,36 @@ bool SimpleReportViewer::showPrevPage()
 
 void SimpleReportViewer::onZoomSliderChanged()
 {
-  this->repaint();
+  // only modify the graphics scene if we have an actual
+  // change of the zoom value
+  //
+  // this also breaks event loops
+  int newZoomFactor = ui->zoomSlider->value();
+  if (newZoomFactor == ui->gv->getZoomFactor()) return;
+
+  ui->gv->setZoomFactor(newZoomFactor);
 }
 
 //---------------------------------------------------------------------------
 
 void SimpleReportViewer::onBtnZoomLessClicked()
 {
-  int curVal = ui->zoomSlider->value();
+  int step = ui->zoomSlider->pageStep();
+  ui->gv->setZoomFactor_Delta(-step);
 
-  ui->zoomSlider->setValue( curVal - ui->zoomSlider->pageStep());
-
-  this->repaint();
+  // the slider position will be updated via the viewZoomFactorChanged event
+  // issued by the ReportGraphicsView
 }
 
 //---------------------------------------------------------------------------
 
 void SimpleReportViewer::onBtnZoomMoreClicked()
 {
-  int curVal = ui->zoomSlider->value();
+  int step = ui->zoomSlider->pageStep();
+  ui->gv->setZoomFactor_Delta(step);
 
-  ui->zoomSlider->setValue( curVal + ui->zoomSlider->pageStep());
-
-  this->repaint();
+  // the slider position will be updated via the viewZoomFactorChanged event
+  // issued by the ReportGraphicsView
 }
 
 //---------------------------------------------------------------------------
@@ -212,6 +207,13 @@ void SimpleReportViewer::onBtnZoomMoreClicked()
 void SimpleReportViewer::onSpinBoxPageChanged()
 {
   showPage(ui->sbPage->value() - 1);
+}
+
+//---------------------------------------------------------------------------
+
+void SimpleReportViewer::onGraphicsViewZoomFactorChanged(int newZoomFactor)
+{
+  ui->zoomSlider->setValue(newZoomFactor);
 }
 
 //---------------------------------------------------------------------------
@@ -232,17 +234,14 @@ void SimpleReportViewer::wheelEvent(QWheelEvent* ev)
   if (degrees.isNull()) return;
 
   // increase or decrease the zoom level
-  int curVal = ui->zoomSlider->value();
-  int step = ui->zoomSlider->pageStep();
+  int step = 10;
 
   if ((degrees.x() <= 0) && (degrees.y() <= 0))
   {
     step *= -1;
   }
 
-  ui->zoomSlider->setValue( curVal + step);
-
-  this->repaint();
+  ui->gv->setZoomFactor_Delta(step);
 }
 
 //---------------------------------------------------------------------------

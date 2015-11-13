@@ -35,10 +35,11 @@ public slots:
   void onBtnZoomMoreClicked();
   void onBtnZoomLessClicked();
   void onSpinBoxPageChanged();
+  void onGraphicsViewZoomFactorChanged(int newZoomFactor);
   virtual void wheelEvent(QWheelEvent* ev) override;
 
 protected:
-  void paintEvent(QPaintEvent* event);
+  //void paintEvent(QPaintEvent* event);
 
 private:
   Ui::SimpleReportViewer *ui;
