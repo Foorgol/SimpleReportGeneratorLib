@@ -2,6 +2,8 @@
 
 #include <QPrinter>
 #include <QPrintDialog>
+#include <QDebug>
+#include <QWheelEvent>
 
 #include "SimpleReportViewer.h"
 #include "ui_SimpleReportViewer.h"
@@ -210,6 +212,37 @@ void SimpleReportViewer::onBtnZoomMoreClicked()
 void SimpleReportViewer::onSpinBoxPageChanged()
 {
   showPage(ui->sbPage->value() - 1);
+}
+
+//---------------------------------------------------------------------------
+
+void SimpleReportViewer::wheelEvent(QWheelEvent* ev)
+{
+  // ignore / propagate all wheel events without Ctrl-key
+  if (ev->modifiers() != Qt::ControlModifier)
+  {
+    ev->ignore();
+    return;
+  }
+
+  ev->accept();
+
+  // ignore wheel events without actual rotation
+  auto degrees = ev->angleDelta() / 8;
+  if (degrees.isNull()) return;
+
+  // increase or decrease the zoom level
+  int curVal = ui->zoomSlider->value();
+  int step = ui->zoomSlider->pageStep();
+
+  if ((degrees.x() <= 0) && (degrees.y() <= 0))
+  {
+    step *= -1;
+  }
+
+  ui->zoomSlider->setValue( curVal + step);
+
+  this->repaint();
 }
 
 //---------------------------------------------------------------------------

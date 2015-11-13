@@ -35,6 +35,7 @@ public slots:
   void onBtnZoomMoreClicked();
   void onBtnZoomLessClicked();
   void onSpinBoxPageChanged();
+  virtual void wheelEvent(QWheelEvent* ev) override;
 
 protected:
   void paintEvent(QPaintEvent* event);
