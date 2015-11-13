@@ -193,7 +193,7 @@ namespace SimpleReportLib {
     ++pageCount;
     curY = margin;
     maxY = h - margin;
-    ++curPage;
+    curPage = (pageCount - 1);
 
     // limit the scene size to the paper size
     // and add a "page frame" for zooming as a background
@@ -208,7 +208,7 @@ namespace SimpleReportLib {
     maxY -= headerFooterHeight;
 
     // return the ID of the new page
-    return pageCount - 1;
+    return curPage;
   }
 
   //---------------------------------------------------------------------------
@@ -216,6 +216,23 @@ namespace SimpleReportLib {
   int SimpleReportGenerator::getPageCount()
   {
     return pageCount;
+  }
+
+  //---------------------------------------------------------------------------
+
+  bool SimpleReportGenerator::setActivePage(int idxPage)
+  {
+    if ((idxPage < 0) || (idxPage >= pageCount)) return false;
+
+    curPage = idxPage;
+    return true;
+  }
+
+  //---------------------------------------------------------------------------
+
+  int SimpleReportGenerator::getCurrentPageNumber() const
+  {
+    return curPage;
   }
 
   //---------------------------------------------------------------------------

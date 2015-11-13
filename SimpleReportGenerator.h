@@ -81,6 +81,8 @@ namespace SimpleReportLib {
 
     int startNextPage();
     int getPageCount();
+    bool setActivePage(int idxPage);
+    int getCurrentPageNumber() const;
     QGraphicsScene* getPage(int pageNum);
 
     void writeLine(QString txt, const QString& styleName=QString(), double skipAfter = 0.0, double skipBefore = 0.0);
