@@ -165,6 +165,8 @@ namespace SimpleReportLib {
     QRectF drawText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style) const;
     QRectF drawText(const QRectF& refBox, RECT_CORNER refBoxCorner, RECT_CORNER txtBasePointAlignment, const QString& txt, const TextStyle* style) const;
 
+    void drawRect(const QRectF& rect, LINE_TYPE lt=MED, const QColor& fillColor = QColor(255, 255, 255)) const;
+
     // disable copy constructor, just for testing
     SimpleReportGenerator(const SimpleReportGenerator &orig) = delete;
 
@@ -184,7 +186,9 @@ namespace SimpleReportLib {
     QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
     QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const QString& styleName=QString()) const;
     QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style=nullptr) const;
-    double lineType2Width(LINE_TYPE lt) const;
+    void drawRect__internalUnits(const QRectF& rect, LINE_TYPE lt=MED, const QColor& fillColor = QColor(255, 255, 255)) const;
+    double lineType2Width__internalUnits(LINE_TYPE lt) const;
+    QPen lineType2Pen(LINE_TYPE lt, const QColor& penCol = QColor(Qt::black), Qt::PenStyle style = Qt::SolidLine) const;
 
     double w;
     double h;

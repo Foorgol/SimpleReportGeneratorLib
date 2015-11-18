@@ -517,7 +517,7 @@ namespace SimpleReportLib {
 
     drawLine_internalUnits(margin, curY, w-margin, curY, lt);
 
-    curY += lineType2Width(lt) * DEFAULT_LINESKIP_FAC;
+    curY += lineType2Width__internalUnits(lt) * DEFAULT_LINESKIP_FAC;
     curY += skipAfter * ACCURACY_FAC;
   }
 
@@ -659,14 +659,8 @@ namespace SimpleReportLib {
 
   void SimpleReportGenerator::drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt) const
   {
-    double lineWidth = THIN_LINE_WIDTH__MM;
-    if (lt == MED) lineWidth = MEDIUM_LINE_WIDTH__MM;
-    if (lt == THICK) lineWidth = THICK_LINE_WIDTH__MM;
-    lineWidth *= ACCURACY_FAC;
-
     QGraphicsLineItem* line = page[curPage]->addLine(x0, y0, x1, y1);
-    QPen p = QPen();
-    p.setWidth(lineWidth);
+    QPen p = lineType2Pen(lt);
     line->setPen(p);
   }
 
@@ -753,6 +747,21 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  void SimpleReportGenerator::drawRect__internalUnits(const QRectF& rect, LINE_TYPE lt, const QColor& fillColor) const
+  {
+    // return if we have no valid page
+    if (curPage < 0) return;
+
+    QPen pen = lineType2Pen(lt);
+    QBrush brush = QBrush(fillColor);
+
+    // add the rectangle to the scene
+    QGraphicsScene* pg = page[curPage];
+    pg->addRect(rect, pen, brush);
+  }
+
+  //---------------------------------------------------------------------------
+
   QRectF SimpleReportGenerator::drawText(double x0, double y0, const QString& txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
   {
     QRectF internalRect = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, styleName, align);
@@ -798,6 +807,14 @@ namespace SimpleReportLib {
   {
     auto basepoint = calcRectCorner(refBox, refBoxCorner);
     return drawText(basepoint, txtBasePointAlignment, txt, style);
+  }
+
+  //---------------------------------------------------------------------------
+
+  void SimpleReportGenerator::drawRect(const QRectF& rect, LINE_TYPE lt, const QColor& fillColor) const
+  {
+    QRectF internalRect = QRectF(rect.topLeft() * ACCURACY_FAC, rect.size() * ACCURACY_FAC);
+    drawRect__internalUnits(internalRect, lt, fillColor);
   }
 
   //---------------------------------------------------------------------------
@@ -873,12 +890,21 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  double SimpleReportGenerator::lineType2Width(LINE_TYPE lt) const
+  double SimpleReportGenerator::lineType2Width__internalUnits(LINE_TYPE lt) const
   {
     double lineWidth = THIN_LINE_WIDTH__MM;
     if (lt == MED) lineWidth = MEDIUM_LINE_WIDTH__MM;
     if (lt == THICK) lineWidth = THICK_LINE_WIDTH__MM;
     return lineWidth * ACCURACY_FAC;
+  }
+
+  //---------------------------------------------------------------------------
+
+  QPen SimpleReportGenerator::lineType2Pen(LINE_TYPE lt, const QColor& penCol, Qt::PenStyle style) const
+  {
+    double lw = lineType2Width__internalUnits(lt);
+    QBrush br{penCol};
+    return QPen{br, lw, style};
   }
 
   //---------------------------------------------------------------------------
