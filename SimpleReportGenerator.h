@@ -45,6 +45,18 @@ namespace SimpleReportLib {
     THICK
   };
 
+  enum class RECT_CORNER {
+    TOP_LEFT,
+    TOP_CENTER,
+    TOP_RIGHT,
+    MID_LEFT,
+    CENTER,
+    MID_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_CENTER,
+    BOTTOM_RIGHT
+  };
+
   class SIMPLEREPORTGENERATORSHARED_EXPORT HeaderFooterStrings
   {
   public:
@@ -89,6 +101,7 @@ namespace SimpleReportLib {
     void writeLine(QString txt, TextStyle* style, double skipAfter = 0.0, double skipBefore = 0.0);
     void skip(double skipAmount);
     void warpTo(double newAbsYPos);
+    QPointF getAbsCursorPos() const;
 
     void setHeader(QString left, QString mid, QString right, int page=-1);
     void setFooter(QString left, QString mid, QString right, int page=-1);
@@ -123,18 +136,34 @@ namespace SimpleReportLib {
     {
       drawLine_internalUnits(x0 * ACCURACY_FAC, y0 * ACCURACY_FAC, x1 * ACCURACY_FAC, y1 * ACCURACY_FAC, lt);
     }
+    inline void drawLine(const QPointF& p0, const QPointF& p1, LINE_TYPE lt=MED)
+    {
+      drawLine__internalUnits(p0 * ACCURACY_FAC, p1 * ACCURACY_FAC, lt);
+    }
 
     inline void drawHorLine(double x0, double y0, double len, LINE_TYPE lt=MED)
     {
       drawLine(x0, y0, x0 + len, y0, lt);
     }
+    inline void drawHorLine(const QPointF& p0, double len, LINE_TYPE lt=MED)
+    {
+      drawLine(p0, p0 + QPointF(len, 0), lt);
+    }
+
     inline void drawVertLine(double x0, double y0, double len, LINE_TYPE lt=MED)
     {
       drawLine(x0, y0, x0, y0 + len, lt);
     }
+    inline void drawVertLine(const QPointF& p0, double len, LINE_TYPE lt=MED)
+    {
+      drawLine(p0, p0 + QPointF(0, len), lt);
+    }
 
     QRectF drawText(double x0, double y0, const QString& txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
     QRectF drawText(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF drawText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const QString& styleName=QString()) const;
+    QRectF drawText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style) const;
+    QRectF drawText(const QRectF& refBox, RECT_CORNER refBoxCorner, RECT_CORNER txtBasePointAlignment, const QString& txt, const TextStyle* style) const;
 
     // disable copy constructor, just for testing
     SimpleReportGenerator(const SimpleReportGenerator &orig) = delete;
@@ -143,12 +172,18 @@ namespace SimpleReportLib {
     // the text to the scene
     QSizeF getTextDimensions_MM(const QString& txt, const TextStyle* style);
 
+    // calculate the position of a corner of a rectangle
+    QPointF calcRectCorner(const QRectF& rect, RECT_CORNER corner) const;
+
   private:
     QRectF setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
     double getTextHeightForStyle(const QString& styleName=QString(), const QString& sampleText=QString());
     void drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt=MED) const;
+    void drawLine__internalUnits(const QPointF& p0, const QPointF& p1, LINE_TYPE lt=MED) const;
     QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const QString& styleName=QString(), HOR_TXT_ALIGNMENT align=LEFT) const;
     QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
+    QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const QString& styleName=QString()) const;
+    QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style=nullptr) const;
     double lineType2Width(LINE_TYPE lt) const;
 
     double w;

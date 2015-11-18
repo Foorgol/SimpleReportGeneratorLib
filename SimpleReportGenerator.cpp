@@ -544,6 +544,13 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  QPointF SimpleReportGenerator::getAbsCursorPos() const
+  {
+    return (QPointF(margin, curY) / ACCURACY_FAC);
+  }
+
+  //---------------------------------------------------------------------------
+
   void SimpleReportGenerator::pushTabs(TabSet &newTabs)
   {
     tabStack.push(tabSet);
@@ -665,6 +672,13 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  void SimpleReportGenerator::drawLine__internalUnits(const QPointF &p0, const QPointF &p1, LINE_TYPE lt) const
+  {
+    drawLine_internalUnits(p0.x(), p0.y(), p1.x(), p1.y());
+  }
+
+  //---------------------------------------------------------------------------
+
   QRectF SimpleReportGenerator::drawText__internalUnits(double x0, double y0, const QString& txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
   {
     auto style = styleLib.getStyle(styleName);
@@ -694,6 +708,51 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  QRectF SimpleReportGenerator::drawText__internalUnits(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const QString &styleName) const
+  {
+    auto style = styleLib.getStyle(styleName);
+    if (style == nullptr) style = styleLib.getStyle(); // fallback to root style
+
+    return drawText__internalUnits(basePoint, basePointAlignment, txt, style);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawText__internalUnits(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const TextStyle *style) const
+  {
+    // return empty rect if we have no valid page
+    if (curPage < 0) return QRectF();
+
+    // Select the right font
+    QFont fnt;
+    if (style == nullptr)
+    {
+      fnt = *(styleLib.getStyle()->getFont());
+    } else {
+      fnt = *(style->getFont());
+    }
+
+    QGraphicsScene* pg = page[curPage];
+    QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
+
+    // calculate the base point position in the text item's current bounding box
+    auto txtBox = txtItem->boundingRect();
+    QPointF srcBasePoint = calcRectCorner(txtBox, basePointAlignment);
+
+    // determine the offset between the base points to
+    // get the translation vector from the source to the target postion
+    QPointF translationVector = basePoint - srcBasePoint;
+
+    // apply the translation vector to the txt item's current position
+    QPointF srcTxtPos = txtItem->pos();
+    QPointF dstTxtPos = srcTxtPos + translationVector;
+    txtItem->setPos(dstTxtPos);
+
+    return txtItem->boundingRect();
+  }
+
+  //---------------------------------------------------------------------------
+
   QRectF SimpleReportGenerator::drawText(double x0, double y0, const QString& txt, const QString& styleName, HOR_TXT_ALIGNMENT align) const
   {
     QRectF internalRect = drawText__internalUnits(x0 * ACCURACY_FAC, y0*ACCURACY_FAC, txt, styleName, align);
@@ -718,6 +777,31 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  QRectF SimpleReportGenerator::drawText(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const QString &styleName) const
+  {
+
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawText(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const TextStyle *style) const
+  {
+    QRectF bbInternalUnits = drawText__internalUnits(basePoint * ACCURACY_FAC, basePointAlignment, txt, style);
+
+    QRectF bbExternalUnits(bbInternalUnits.topLeft() / ACCURACY_FAC, bbInternalUnits.size() / ACCURACY_FAC);
+    return bbExternalUnits;
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawText(const QRectF &refBox, RECT_CORNER refBoxCorner, RECT_CORNER txtBasePointAlignment, const QString &txt, const TextStyle *style) const
+  {
+    auto basepoint = calcRectCorner(refBox, refBoxCorner);
+    return drawText(basepoint, txtBasePointAlignment, txt, style);
+  }
+
+  //---------------------------------------------------------------------------
+
   QSizeF SimpleReportGenerator::getTextDimensions_MM(const QString& txt, const TextStyle* style)
   {
     // we need a QGraphicsScene; if none has been created yet, we return an
@@ -738,6 +822,53 @@ namespace SimpleReportLib {
 
     // convert internal units to external units (mm) and return the result
     return (result_internalUnits / ACCURACY_FAC);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QPointF SimpleReportGenerator::calcRectCorner(const QRectF &rect, RECT_CORNER corner) const
+  {
+    QPointF tmp;
+    switch (corner)
+    {
+      case RECT_CORNER::TOP_LEFT:
+        return rect.topLeft();
+
+      case RECT_CORNER::TOP_CENTER:
+        tmp = rect.topLeft();
+        tmp.setX(tmp.x() + rect.width() / 2.0);
+        return tmp;
+
+      case RECT_CORNER::TOP_RIGHT:
+        return rect.topRight();
+
+      case RECT_CORNER::MID_LEFT:
+        tmp = rect.topLeft();
+        tmp.setY(tmp.y() + rect.height() / 2.0);
+        return tmp;
+
+      case RECT_CORNER::CENTER:
+        return rect.center();
+
+      case RECT_CORNER::MID_RIGHT:
+        tmp = rect.topRight();
+        tmp.setY(tmp.y() + rect.height() / 2.0);
+        return tmp;
+
+      case RECT_CORNER::BOTTOM_LEFT:
+        return rect.bottomLeft();
+        break;
+
+      case RECT_CORNER::BOTTOM_CENTER:
+        tmp = rect.bottomLeft();
+        tmp.setX(tmp.x() + rect.width() / 2.0);
+        return tmp;
+
+      case RECT_CORNER::BOTTOM_RIGHT:
+        return rect.bottomRight();
+    }
+
+    return tmp;
   }
 
   //---------------------------------------------------------------------------
