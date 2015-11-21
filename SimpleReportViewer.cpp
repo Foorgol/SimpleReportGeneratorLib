@@ -70,7 +70,16 @@ void SimpleReportViewer::onBtnPrintClicked()
     printer.setFromTo(1, numPages);
     printer.setPrintRange(QPrinter::AllPages);
 
-    if (QPrintDialog(&printer).exec() == QDialog::Accepted) {
+    // adjust the page orientation, depending
+    // on our actual page size
+    if (report->getPageWidth() > report->getPageHeight())
+    {
+      printer.setPageOrientation(QPageLayout::Landscape);
+    } else {
+      printer.setPageOrientation(QPageLayout::Portrait);
+    }
+
+    if (QPrintDialog(&printer, this).exec() == QDialog::Accepted) {
       // get the page range from the printer dialog
       int firstPage = printer.fromPage();
       int lastPage = printer.toPage();
