@@ -164,6 +164,9 @@ namespace SimpleReportLib {
     QRectF drawText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const QString& styleName=QString()) const;
     QRectF drawText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style) const;
     QRectF drawText(const QRectF& refBox, RECT_CORNER refBoxCorner, RECT_CORNER txtBasePointAlignment, const QString& txt, const TextStyle* style) const;
+    QRectF drawMultilineText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QStringList& lines, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const;
+    QRectF drawMultilineText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& newlineSepTxt, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const;
+    QRectF drawMultilineText(const QRectF& refBox, RECT_CORNER refBoxCorner, RECT_CORNER basePointAlignment, const QString& newlineSepTxt, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const;
 
     void drawRect(const QRectF& rect, LINE_TYPE lt=MED, const QColor& fillColor = QColor(255, 255, 255)) const;
 
@@ -186,6 +189,10 @@ namespace SimpleReportLib {
     QRectF drawText__internalUnits(double x0, double y0, const QString& txt, const TextStyle* style, HOR_TXT_ALIGNMENT align=LEFT) const;
     QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const QString& styleName=QString()) const;
     QRectF drawText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& txt, const TextStyle* style=nullptr) const;
+    QRectF moveTextItem(QGraphicsSimpleTextItem* item, const QPointF& targetPoint, RECT_CORNER targetPointAlignment) const;
+    QGraphicsSimpleTextItem* addStyledTextItem(const QString& txt, const TextStyle* style=nullptr) const;
+    QGraphicsSimpleTextItem* addStyledTextItem(const QString& txt, const QString& styleName=QString()) const;
+    QRectF drawMultilineText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QStringList& lines, HOR_TXT_ALIGNMENT horAlign, double lineSpace, const TextStyle* style) const;
     void drawRect__internalUnits(const QRectF& rect, LINE_TYPE lt=MED, const QColor& fillColor = QColor(255, 255, 255)) const;
     double lineType2Width__internalUnits(LINE_TYPE lt) const;
     QPen lineType2Pen(LINE_TYPE lt, const QColor& penCol = QColor(Qt::black), Qt::PenStyle style = Qt::SolidLine) const;

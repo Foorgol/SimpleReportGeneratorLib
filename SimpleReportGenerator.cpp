@@ -1,6 +1,7 @@
 #include "SimpleReportGenerator.h"
 
 #include <stdexcept>
+#include <assert.h>
 
 #include <QGraphicsLineItem>
 #include <QHash>
@@ -704,18 +705,51 @@ namespace SimpleReportLib {
 
   QRectF SimpleReportGenerator::drawText__internalUnits(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const QString &styleName) const
   {
-    auto style = styleLib.getStyle(styleName);
-    if (style == nullptr) style = styleLib.getStyle(); // fallback to root style
+    QGraphicsSimpleTextItem* txtItem = addStyledTextItem(txt, styleName);
+    if (txtItem == nullptr) return QRectF();
 
-    return drawText__internalUnits(basePoint, basePointAlignment, txt, style);
+    return moveTextItem(txtItem, basePoint, basePointAlignment);
   }
 
   //---------------------------------------------------------------------------
 
   QRectF SimpleReportGenerator::drawText__internalUnits(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const TextStyle *style) const
   {
-    // return empty rect if we have no valid page
-    if (curPage < 0) return QRectF();
+    QGraphicsSimpleTextItem* txtItem = addStyledTextItem(txt, style);
+    if (txtItem == nullptr) return QRectF();
+
+    return moveTextItem(txtItem, basePoint, basePointAlignment);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::moveTextItem(QGraphicsSimpleTextItem* item, const QPointF& targetPoint, RECT_CORNER targetPointAlignment) const
+  {
+    if (item == nullptr) return QRectF();
+
+    // calculate the base point position in the text item's current bounding box
+    auto txtBox = item->boundingRect();
+    QPointF srcBasePoint = calcRectCorner(txtBox, targetPointAlignment);
+
+    // determine the offset between the base points to
+    // get the translation vector from the source to the target postion
+    QPointF translationVector = targetPoint - srcBasePoint;
+
+    // apply the translation vector to the txt item's current position
+    QPointF srcTxtPos = item->pos();
+    QPointF dstTxtPos = srcTxtPos + translationVector;
+    item->setPos(dstTxtPos);
+
+    // return the new bounding box.
+    return txtBox.translated(translationVector);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QGraphicsSimpleTextItem*SimpleReportGenerator::addStyledTextItem(const QString& txt, const TextStyle* style) const
+  {
+    // return null if we have no valid page
+    if (curPage < 0) return nullptr;
 
     // Select the right font
     QFont fnt;
@@ -727,22 +761,97 @@ namespace SimpleReportLib {
     }
 
     QGraphicsScene* pg = page[curPage];
-    QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
+    return pg->addSimpleText(txt, fnt);
+  }
 
-    // calculate the base point position in the text item's current bounding box
-    auto txtBox = txtItem->boundingRect();
-    QPointF srcBasePoint = calcRectCorner(txtBox, basePointAlignment);
+  //---------------------------------------------------------------------------
 
-    // determine the offset between the base points to
-    // get the translation vector from the source to the target postion
+  QGraphicsSimpleTextItem*SimpleReportGenerator::addStyledTextItem(const QString& txt, const QString& styleName) const
+  {
+    auto style = styleLib.getStyle(styleName);
+    if (style == nullptr) style = styleLib.getStyle(); // fallback to root style
+
+    return addStyledTextItem(txt, style);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawMultilineText__internalUnits(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QStringList& lines, HOR_TXT_ALIGNMENT horAlign, double lineSpace, const TextStyle* style) const
+  {
+    // determine the internal base point of all text items
+    RECT_CORNER internalRefCorner;
+    switch (horAlign)
+    {
+    case LEFT:
+      internalRefCorner = RECT_CORNER::TOP_LEFT;
+      break;
+
+    case CENTER:
+      internalRefCorner = RECT_CORNER::TOP_CENTER;
+      break;
+
+    default:
+      internalRefCorner = RECT_CORNER::TOP_RIGHT;
+    }
+
+    // add all items to the scene
+    // and arrange all items in a the default location
+    QList<QGraphicsSimpleTextItem*> txtItems;
+    QPointF nextItemPos;
+    QPointF topLeft;
+    QPointF bottomRight;
+    for (const QString& txt : lines)
+    {
+      auto txtItem = addStyledTextItem(txt, style);
+      if (txtItem == nullptr) return QRectF();
+
+      auto bb = moveTextItem(txtItem, nextItemPos, internalRefCorner);
+
+      // calculate the overall extends of all items
+      if (topLeft.isNull())
+      {
+        topLeft = bb.topLeft();
+      } else {
+        if (bb.topLeft().x() < topLeft.x()) topLeft.setX(bb.topLeft().x());
+        if (bb.topLeft().y() < topLeft.y()) topLeft.setY(bb.topLeft().y());
+      }
+      if (bottomRight.isNull())
+      {
+        bottomRight = bb.bottomRight();
+      } else {
+        if (bb.bottomRight().x() > bottomRight.x()) bottomRight.setX(bb.bottomRight().x());
+        if (bb.bottomRight().y() > bottomRight.y()) bottomRight.setY(bb.bottomRight().y());
+      }
+
+      // calculate the next item's position relative to this item
+      nextItemPos.setY(nextItemPos.y() + bb.height() + lineSpace);
+
+      // store the item for later
+      txtItems.push_back(txtItem);
+    }
+
+    // stop here if the text list was empty
+    if (txtItems.isEmpty()) return QRectF();
+
+    // calculate the overall bounding box for all items
+    QRectF totalBox{topLeft, bottomRight};
+
+    // calculate the current position of the base point
+    QPointF srcBasePoint = calcRectCorner(totalBox, basePointAlignment);
+
+    // calculate the translation vector from the source to the target point
     QPointF translationVector = basePoint - srcBasePoint;
 
-    // apply the translation vector to the txt item's current position
-    QPointF srcTxtPos = txtItem->pos();
-    QPointF dstTxtPos = srcTxtPos + translationVector;
-    txtItem->setPos(dstTxtPos);
+    // move all text items
+    for (QGraphicsSimpleTextItem* item : txtItems)
+    {
+      QPointF srcPos = item->pos();
+      QPointF targetPos = srcPos + translationVector;
+      item->setPos(targetPos);
+    }
 
-    return txtItem->boundingRect();
+    // return the resulting overall bounding box
+    return QRectF{topLeft + translationVector, bottomRight + translationVector};
   }
 
   //---------------------------------------------------------------------------
@@ -807,6 +916,34 @@ namespace SimpleReportLib {
   {
     auto basepoint = calcRectCorner(refBox, refBoxCorner);
     return drawText(basepoint, txtBasePointAlignment, txt, style);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawMultilineText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QStringList& lines, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const
+  {
+    QRectF bbInternalUnits = drawMultilineText__internalUnits(basePoint * ACCURACY_FAC, basePointAlignment, lines, horAlign, lineSpace__MM * ACCURACY_FAC, style);
+    QRectF bbExternalUnits(bbInternalUnits.topLeft() / ACCURACY_FAC, bbInternalUnits.size() / ACCURACY_FAC);
+    return bbExternalUnits;
+  }
+
+  QRectF SimpleReportGenerator::drawMultilineText(const QPointF& basePoint, RECT_CORNER basePointAlignment, const QString& newlineSepTxt, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const
+  {
+    QStringList sList;
+    for (const QString& txt : newlineSepTxt.split("\n"))
+    {
+      sList.push_back(txt);
+    }
+
+    return drawMultilineText(basePoint, basePointAlignment, sList, horAlign, lineSpace__MM, style);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::drawMultilineText(const QRectF& refBox, RECT_CORNER refBoxCorner, RECT_CORNER basePointAlignment, const QString& newlineSepTxt, HOR_TXT_ALIGNMENT horAlign, double lineSpace__MM, const TextStyle* style) const
+  {
+    auto basepoint = calcRectCorner(refBox, refBoxCorner);
+    return drawMultilineText(basepoint, basePointAlignment, newlineSepTxt, horAlign, lineSpace__MM, style);
   }
 
   //---------------------------------------------------------------------------
