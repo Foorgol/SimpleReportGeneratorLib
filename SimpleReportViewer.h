@@ -26,6 +26,7 @@ public:
   bool showPrevPage();
   bool showPage(int pgNum);
   bool setReport(SimpleReportGenerator* r);
+  void refreshDisplayedContent();
 
 public slots:
   void onBtnPrintClicked();

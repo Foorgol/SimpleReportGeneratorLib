@@ -61,6 +61,14 @@ bool SimpleReportViewer::setReport(SimpleReportGenerator *r)
 
 //---------------------------------------------------------------------------
 
+void SimpleReportViewer::refreshDisplayedContent()
+{
+  if (report == nullptr) return;
+  showPage(curPage);
+}
+
+//---------------------------------------------------------------------------
+
 void SimpleReportViewer::onBtnPrintClicked()
 {
     QPrinter printer;
