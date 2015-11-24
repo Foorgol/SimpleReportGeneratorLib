@@ -729,6 +729,7 @@ namespace SimpleReportLib {
 
     // calculate the base point position in the text item's current bounding box
     auto txtBox = item->boundingRect();
+    txtBox = QRectF{item->pos(), txtBox.size()};
     QPointF srcBasePoint = calcRectCorner(txtBox, targetPointAlignment);
 
     // determine the offset between the base points to
@@ -808,20 +809,10 @@ namespace SimpleReportLib {
       auto bb = moveTextItem(txtItem, nextItemPos, internalRefCorner);
 
       // calculate the overall extends of all items
-      if (topLeft.isNull())
-      {
-        topLeft = bb.topLeft();
-      } else {
-        if (bb.topLeft().x() < topLeft.x()) topLeft.setX(bb.topLeft().x());
-        if (bb.topLeft().y() < topLeft.y()) topLeft.setY(bb.topLeft().y());
-      }
-      if (bottomRight.isNull())
-      {
-        bottomRight = bb.bottomRight();
-      } else {
-        if (bb.bottomRight().x() > bottomRight.x()) bottomRight.setX(bb.bottomRight().x());
-        if (bb.bottomRight().y() > bottomRight.y()) bottomRight.setY(bb.bottomRight().y());
-      }
+      if (bb.topLeft().x() < topLeft.x()) topLeft.setX(bb.topLeft().x());
+      if (bb.topLeft().y() < topLeft.y()) topLeft.setY(bb.topLeft().y());
+      if (bb.bottomRight().x() > bottomRight.x()) bottomRight.setX(bb.bottomRight().x());
+      if (bb.bottomRight().y() > bottomRight.y()) bottomRight.setY(bb.bottomRight().y());
 
       // calculate the next item's position relative to this item
       nextItemPos.setY(nextItemPos.y() + bb.height() + lineSpace);
