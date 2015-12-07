@@ -687,7 +687,7 @@ namespace SimpleReportLib {
 
   void SimpleReportGenerator::drawLine__internalUnits(const QPointF &p0, const QPointF &p1, LINE_TYPE lt) const
   {
-    drawLine_internalUnits(p0.x(), p0.y(), p1.x(), p1.y());
+    drawLine_internalUnits(p0.x(), p0.y(), p1.x(), p1.y(), lt);
   }
 
   //---------------------------------------------------------------------------
