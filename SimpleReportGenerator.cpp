@@ -906,7 +906,9 @@ namespace SimpleReportLib {
 
   QRectF SimpleReportGenerator::drawText(const QPointF &basePoint, RECT_CORNER basePointAlignment, const QString &txt, const QString &styleName) const
   {
-
+    QRectF bbInternalUnits = drawText__internalUnits(basePoint * ACCURACY_FAC, basePointAlignment, txt, styleName);
+    QRectF bbExternalUnits(bbInternalUnits.topLeft() / ACCURACY_FAC, bbInternalUnits.size() / ACCURACY_FAC);
+    return bbExternalUnits;
   }
 
   //---------------------------------------------------------------------------
