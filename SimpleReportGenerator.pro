@@ -30,7 +30,8 @@ SOURCES += SimpleReportGenerator.cpp \
     SimpleReportViewer.cpp \
     TextStyle.cpp \
     TextStyleLib.cpp \
-    ReportGraphicsView.cpp
+    ReportGraphicsView.cpp \
+    LineChart.cpp
 
 HEADERS += SimpleReportGenerator.h\
         simplereportgenerator_global.h \
@@ -39,7 +40,8 @@ HEADERS += SimpleReportGenerator.h\
     SimpleReportViewer.h \
     TextStyle.h \
     TextStyleLib.h \
-    ReportGraphicsView.h
+    ReportGraphicsView.h \
+    LineChart.h
 
 unix {
     target.path = /usr/lib
