@@ -6,7 +6,7 @@
 
 QT       += widgets
 
-QMAKE_CXXFLAGS += -std=c++14
+CONFIG += c++14
 
 # Optimization level O3 for release
 #QMAKE_CXXFLAGS_RELEASE -= -O2
@@ -20,7 +20,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
 TARGET = SimpleReportGenerator
 TEMPLATE = lib
 
-VERSION = 0.2.0
+VERSION = 0.3.0
 
 DEFINES += SIMPLEREPORTGENERATOR_LIBRARY
 
