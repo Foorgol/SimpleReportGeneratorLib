@@ -22,14 +22,14 @@
 #include <vector>
 #include <tuple>
 
-#include "simplereportgenerator_global.h"
+//#include "simplereportgenerator_global.h"
 #include "SimpleReportGenerator.h"
 
 using namespace std;
 
 namespace SimpleReportLib {
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT LineChart
+  class LineChart
   {
   public:
     static constexpr double AXIS_WIDTH__MM = 1.5;

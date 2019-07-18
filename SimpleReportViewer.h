@@ -21,7 +21,7 @@
 
 #include <QWidget>
 
-#include "simplereportgenerator_global.h"
+//#include "simplereportgenerator_global.h"
 #include "SimpleReportGenerator.h"
 
 namespace Ui {
@@ -32,7 +32,7 @@ namespace SimpleReportLib {
 
 using namespace SimpleReportLib;
 
-class SIMPLEREPORTGENERATORSHARED_EXPORT SimpleReportViewer : public QWidget
+class SimpleReportViewer : public QWidget
 {
   Q_OBJECT
 

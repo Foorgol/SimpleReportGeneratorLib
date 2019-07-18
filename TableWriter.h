@@ -23,12 +23,12 @@
 #include <QPainter>
 #include "TabSet.h"
 
-#include "simplereportgenerator_global.h"
+//#include "simplereportgenerator_global.h"
 #include "SimpleReportGenerator.h"
 
 namespace SimpleReportLib {
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT TableWriter {
+  class TableWriter {
   public:
     TableWriter(TabSet& _tabs);
     virtual ~TableWriter();

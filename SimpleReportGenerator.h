@@ -26,7 +26,7 @@
 #include <QGraphicsScene>
 #include <QStack>
 
-#include "simplereportgenerator_global.h"
+//#include "simplereportgenerator_global.h"
 #include "TabSet.h"
 
 #include "TextStyle.h"
@@ -35,17 +35,17 @@
 using namespace std;
 
 namespace SimpleReportLib {
-#define MAX_NUM_PAGES 100
-#define THIN_LINE_WIDTH__MM 0.1
-#define MEDIUM_LINE_WIDTH__MM 0.35
-#define THICK_LINE_WIDTH__MM 0.7
-#define H1_FONT_SIZE__MM 5.0
-#define H2_FONT_SIZE__MM 3.5
-#define PARA_FONT_SIZE__MM 2.0
-#define SYS_FONT "Arial"
-#define DEFAULT_PARSKIP__MM 1.0
-#define DEFAULT_LINESKIP_FAC 1.1
-#define HEADER_FOOTER_SKIP__MM 3.0
+  static constexpr int MAX_NUM_PAGES = 100;
+  static constexpr double THIN_LINE_WIDTH__MM = 0.1;
+  static constexpr double MEDIUM_LINE_WIDTH__MM = 0.35;
+  static constexpr double THICK_LINE_WIDTH__MM = 0.7;
+  static constexpr double H1_FONT_SIZE__MM = 5.0;
+  static constexpr double H2_FONT_SIZE__MM = 3.5;
+  static constexpr double PARA_FONT_SIZE__MM = 2.0;
+  #define SYS_FONT "Arial"
+  static constexpr double DEFAULT_PARSKIP__MM = 1.0;
+  static constexpr double DEFAULT_LINESKIP_FAC = 1.1;
+  static constexpr double HEADER_FOOTER_SKIP__MM = 3.0;
 
 //#define ACCURACY_FAC 50.0
 
@@ -75,7 +75,7 @@ namespace SimpleReportLib {
     BOTTOM_RIGHT
   };
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT HeaderFooterStrings
+  class HeaderFooterStrings
   {
   public:
     static constexpr char TOKEN_CURPGNUM[] = "$#$";
@@ -98,7 +98,7 @@ namespace SimpleReportLib {
     QString fr;
   };
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT SimpleReportGenerator
+  class SimpleReportGenerator
   {
 
   public:

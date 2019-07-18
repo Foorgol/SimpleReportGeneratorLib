@@ -21,24 +21,24 @@
 
 #include <QList>
 
-#include "simplereportgenerator_global.h"
+//#include "simplereportgenerator_global.h"
 
 namespace SimpleReportLib {
 
-  enum SIMPLEREPORTGENERATORSHARED_EXPORT TAB_JUSTIFICATION {
+  enum TAB_JUSTIFICATION {
     TAB_LEFT,
     TAB_CENTER,
     TAB_RIGHT
   };
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT TabDef {
+  class TabDef {
   public:
     TabDef(double _pos, TAB_JUSTIFICATION _just);
     double pos;
     TAB_JUSTIFICATION just;
   };
 
-  class SIMPLEREPORTGENERATORSHARED_EXPORT TabSet {
+  class TabSet {
     
   public:
     TabSet();
