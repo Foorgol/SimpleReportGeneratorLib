@@ -4,16 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += widgets
-
-# Optimization level O3 for release
-#QMAKE_CXXFLAGS_RELEASE -= -O2
-#QMAKE_CXXFLAGS_RELEASE += -O3
-
-# Optimization level O1 for debug
-#QMAKE_CXXFLAGS_DEBUG += -O1
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += printsupport
+QT       += widgets printsupport
 
 TARGET = SimpleReportGenerator
 
@@ -25,7 +16,7 @@ TEMPLATE = lib
 
 CONFIG += c++14 debug_and_release dll build_all
 
-VERSION = 0.3.0
+VERSION = 0.3.1
 
 DEFINES += SIMPLEREPORTGENERATOR_LIBRARY
 

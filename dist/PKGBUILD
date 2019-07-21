@@ -1,0 +1,39 @@
+pkgname="libSimpleReportGenerator"
+pkgver=0.3.1
+pkgrel=1
+pkgdesc="A small lib for generating / viewing / printing simple reports with Qt"
+arch=('i686' 'x86_64')
+url=""
+license=('GPL')
+groups=()
+depends=('qt')
+makedepends=('git') # 'bzr', 'git', 'mercurial' or 'subversion'
+provides=("${pkgname%-git}")
+conflicts=("${pkgname%-git}")
+replaces=()
+backup=()
+options=()
+install=
+source=()
+noextract=()
+md5sums=()
+
+# Please refer to the 'USING VCS SOURCES' section of the PKGBUILD man page for
+# a description of each element in the source array.
+
+prepare() {
+	cd "$srcdir"
+	git clone -b $pkgver --single-branch --depth 1 https://github.com/Foorgol/SimpleReportGeneratorLib.git
+}
+
+build() {
+	cd "$srcdir/${pkgname%-git}"
+	qmake SimpleReportGenerator.pro
+	make
+}
+
+package() {
+	cd "$srcdir/${pkgname%-git}"
+	make DESTDIR="$pkgdir/" install
+}
+
