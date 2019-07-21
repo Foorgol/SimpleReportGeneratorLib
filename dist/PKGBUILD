@@ -6,7 +6,7 @@ arch=('i686' 'x86_64')
 url=""
 license=('GPL')
 groups=()
-depends=('qt')
+depends=('qt5-base' 'qt5-svg')
 makedepends=('git') # 'bzr', 'git', 'mercurial' or 'subversion'
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
@@ -27,13 +27,13 @@ prepare() {
 }
 
 build() {
-	cd "$srcdir/${pkgname%-git}"
+	cd "$srcdir/SimpleReportGeneratorLib"
 	qmake SimpleReportGenerator.pro
 	make
 }
 
 package() {
-	cd "$srcdir/${pkgname%-git}"
-	make DESTDIR="$pkgdir/" install
+	cd "$srcdir/SimpleReportGeneratorLib"
+	make INSTALL_ROOT="$pkgdir/" install
 }
 
