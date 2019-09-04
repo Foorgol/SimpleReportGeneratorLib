@@ -35,7 +35,6 @@
 using namespace std;
 
 namespace SimpleReportLib {
-  static constexpr int MAX_NUM_PAGES = 100;
   static constexpr double THIN_LINE_WIDTH__MM = 0.1;
   static constexpr double MEDIUM_LINE_WIDTH__MM = 0.35;
   static constexpr double THICK_LINE_WIDTH__MM = 0.7;
@@ -86,8 +85,6 @@ namespace SimpleReportLib {
     static void substTokensInPlace(QString& s, int idxCurPage, int totalPageCount);
     static void substTokensInPlace(QString& s, const QHash<QString, QString>& substTab);
 
-    HeaderFooterStrings();
-    virtual ~HeaderFooterStrings();
     //void setHeader(QString l, QString c, QString r);
     //void setFooter(QString l, QString c, QString r);
     QString hl;
@@ -107,13 +104,13 @@ namespace SimpleReportLib {
     SimpleReportGenerator(double _w, double _h, double _margin);
     //SimpleReportGenerator(const SimpleReportGenerator& orig);
     virtual ~SimpleReportGenerator();
-    void deleteAllPages();
+    //void deleteAllPages();
 
-    int startNextPage();
+    void startNextPage();
     int getPageCount();
     bool setActivePage(int idxPage);
-    int getCurrentPageNumber() const;
-    QGraphicsScene* getPage(int pageNum);
+    //int getCurrentPageNumber() const;
+    QGraphicsScene* getPage(int idxPage);
 
     void writeLine(QString txt, const QString& styleName=QString(), double skipAfter = 0.0, double skipBefore = 0.0);
     void writeLine(QString txt, TextStyle* style, double skipAfter = 0.0, double skipBefore = 0.0);
@@ -218,11 +215,11 @@ namespace SimpleReportLib {
     double w;
     double h;
     double margin;
-    int pageCount;
-    int curPage;
+    QGraphicsScene* curPagePtr{nullptr};  // not owning, owner is the vector of unique_ptr
+    int idxCurPage{0};
     double curY;
-    QGraphicsScene* page[MAX_NUM_PAGES];
-    std::unique_ptr<HeaderFooterStrings> headerFooter[MAX_NUM_PAGES];
+    std::vector<std::unique_ptr<QGraphicsScene>> pages;
+    std::vector<std::unique_ptr<HeaderFooterStrings>> headerFooter;
     HeaderFooterStrings globalHeaderFooter;
 
     QPen thinPen;

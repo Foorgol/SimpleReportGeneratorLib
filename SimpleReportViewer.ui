@@ -41,7 +41,7 @@
        <item>
         <widget class="QToolButton" name="btnPagePrev">
          <property name="text">
-          <string>P-</string>
+          <string>&lt;</string>
          </property>
         </widget>
        </item>
@@ -55,7 +55,7 @@
        <item>
         <widget class="QToolButton" name="btnPageNext">
          <property name="text">
-          <string>P+</string>
+          <string>&gt;</string>
          </property>
         </widget>
        </item>
@@ -75,7 +75,7 @@
        <item>
         <widget class="QToolButton" name="btnZoomLess">
          <property name="text">
-          <string>Z-</string>
+          <string>--</string>
          </property>
         </widget>
        </item>
@@ -101,7 +101,7 @@
        <item>
         <widget class="QToolButton" name="btnZoomMore">
          <property name="text">
-          <string>Z+</string>
+          <string>+</string>
          </property>
         </widget>
        </item>

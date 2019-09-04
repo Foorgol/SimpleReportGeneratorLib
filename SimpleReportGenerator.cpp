@@ -38,18 +38,6 @@ namespace SimpleReportLib {
 
 //---------------------------------------------------------------------------
 
-  HeaderFooterStrings::HeaderFooterStrings()
-  {
-  }
-
-//---------------------------------------------------------------------------
-
-  HeaderFooterStrings::~HeaderFooterStrings()
-  {
-  }
-
-//---------------------------------------------------------------------------
-
   void HeaderFooterStrings::substTokens(int curPageNum, int totalPageCount)
   {
     // determine local time and date and convert them into strings
@@ -134,10 +122,6 @@ namespace SimpleReportLib {
     h = _h * ACCURACY_FAC;
     margin = _margin * ACCURACY_FAC;
 
-    pageCount = 0;
-    for (int i=0; i<MAX_NUM_PAGES; i++) page[i] = nullptr;
-    curPage = -1;
-
     // initialize header and footer strings
     globalHeaderFooter.hl = "";
     globalHeaderFooter.hc = "";
@@ -179,88 +163,68 @@ namespace SimpleReportLib {
   //---------------------------------------------------------------------------
 
   SimpleReportGenerator::~SimpleReportGenerator() {
-    deleteAllPages();
+    //deleteAllPages();
   }
 
   //---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::deleteAllPages()
+  /*void SimpleReportGenerator::deleteAllPages()
   {
-    for (int i=0; i < MAX_NUM_PAGES; i++)
-    {
-      QGraphicsScene* sc = page[i];
-      if (sc != 0)
-      {
-        delete sc;
-        page[i] = 0;
-      }
-    }
-  }
+  }*/
 
   //---------------------------------------------------------------------------
 
-  int SimpleReportGenerator::startNextPage()
+  void SimpleReportGenerator::startNextPage()
   {
-    if (pageCount >= MAX_NUM_PAGES)
-    {
-      return -1;
-    }
-
     // start a new scene ( = page) and initialize it accordingly
-    auto newScene = new QGraphicsScene(0, 0, w, h);
-    page[pageCount] = newScene;
-    ++pageCount;
+    auto newScene = make_unique<QGraphicsScene>(0, 0, w, h);
+    curPagePtr = newScene.get();
+    pages.push_back(std::move(newScene));
     curY = margin;
     maxY = h - margin;
-    curPage = (pageCount - 1);
+    unique_ptr<HeaderFooterStrings> headFoot{};
+    headerFooter.push_back(std::move(headFoot));
+    idxCurPage = pages.size() - 1;
 
     // limit the scene size to the paper size
     // and add a "page frame" for zooming as a background
     // color in the viewer
     QPen pen(Qt::white, 0);
-    newScene->setSceneRect(0, 0, w, h);
-    newScene->addRect(0,0,w,h,pen, QBrush(Qt::white));
+    curPagePtr->setSceneRect(0, 0, w, h);
+    curPagePtr->addRect(0,0,w,h,pen, QBrush(Qt::white));
 
     // reserve space for header and footer
     double headerFooterHeight = HEADER_FOOTER_SKIP__MM * ACCURACY_FAC + getTextHeightForStyle(DEFAULT_HEADER_STYLE_NAME);
     curY += headerFooterHeight;
     maxY -= headerFooterHeight;
-
-    // return the ID of the new page
-    return curPage;
   }
 
   //---------------------------------------------------------------------------
 
   int SimpleReportGenerator::getPageCount()
   {
-    return pageCount;
+    return pages.size();
   }
 
   //---------------------------------------------------------------------------
 
   bool SimpleReportGenerator::setActivePage(int idxPage)
   {
-    if ((idxPage < 0) || (idxPage >= pageCount)) return false;
+    if ((idxPage < 0) || (idxPage >= pages.size())) return false;
 
-    curPage = idxPage;
+    curPagePtr = pages.at(idxPage).get();
+    idxCurPage = idxPage;
+
     return true;
   }
 
   //---------------------------------------------------------------------------
 
-  int SimpleReportGenerator::getCurrentPageNumber() const
+  QGraphicsScene* SimpleReportGenerator::getPage(int idxPage)
   {
-    return curPage;
-  }
+    if (idxPage >= pages.size()) return nullptr;
 
-  //---------------------------------------------------------------------------
-
-  QGraphicsScene* SimpleReportGenerator::getPage(int pageNum)
-  {
-    if (pageNum >= pageCount) return 0;
-
-    return page[pageNum];
+    return pages.at(idxPage).get();
   }
 
   //---------------------------------------------------------------------------
@@ -277,6 +241,8 @@ namespace SimpleReportLib {
 
   void SimpleReportGenerator::writeLine(QString txt, TextStyle* style, double skipAfter, double skipBefore)
   {
+    if (!curPagePtr) return;
+
     if (style == nullptr) style = styleLib.getStyle();
 
     if (!(hasSpaceForAnotherLine(style, skipBefore)))
@@ -289,14 +255,12 @@ namespace SimpleReportLib {
     // Select the right font
     QFont fnt = *(style->getFont());
 
-    QGraphicsScene* pg = page[curPage];
-
     // add the text to the scene (separated by tabs if applicable)
     double txtHeight = 0;
     if (tabSet.getTabCount() == 0)
     {
       // no tabs defined, simply write out the text
-      QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
+      QGraphicsSimpleTextItem* txtItem = curPagePtr->addSimpleText(txt, fnt);
       auto bb = setTextPosAligned(margin, curY, txtItem);
       txtHeight = bb.height();
     } else {
@@ -305,7 +269,7 @@ namespace SimpleReportLib {
       // the first chunk is always left-justified, just like regular text
       // and: we always have at least one chunk, even if there is no tab in
       // the text
-      QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txtChunk.at(0).trimmed(), fnt);
+      QGraphicsSimpleTextItem* txtItem = curPagePtr->addSimpleText(txtChunk.at(0).trimmed(), fnt);
       auto bb = setTextPosAligned(margin, curY, txtItem);
       txtHeight = bb.height();
       txtChunk.removeFirst();
@@ -327,7 +291,7 @@ namespace SimpleReportLib {
         HOR_TXT_ALIGNMENT align = LEFT;
         if (td.just == TAB_CENTER) align = CENTER;
         if (td.just == TAB_RIGHT) align = RIGHT;
-        txtItem = pg->addSimpleText(txtChunk.at(tabIndex).trimmed(), fnt);
+        txtItem = curPagePtr->addSimpleText(txtChunk.at(tabIndex).trimmed(), fnt);
         double chunkHeight;
         auto bb = setTextPosAligned(td.pos * ACCURACY_FAC + margin, curY, txtItem, align);
         chunkHeight = bb.height();
@@ -377,11 +341,12 @@ namespace SimpleReportLib {
       return;
     }
 
-    if (page >= MAX_NUM_PAGES) return;
+    if (page >= pages.size()) return;
 
     if (headerFooter[page] == nullptr)
     {
-      headerFooter[page] = std::unique_ptr<HeaderFooterStrings>(new HeaderFooterStrings);
+      auto hf = make_unique<HeaderFooterStrings>();
+      headerFooter[page] = std::move(hf);
     }
 
     (headerFooter[page])->hl = left.trimmed();
@@ -401,11 +366,12 @@ namespace SimpleReportLib {
       return;
     }
 
-    if (page >= MAX_NUM_PAGES) return;
+    if (page >= pages.size()) return;
 
     if (headerFooter[page] == nullptr)
     {
-      headerFooter[page] = std::unique_ptr<HeaderFooterStrings>(new HeaderFooterStrings);
+      auto hf = make_unique<HeaderFooterStrings>();
+      headerFooter[page] = std::move(hf);
     }
 
     (headerFooter[page])->fl = left.trimmed();
@@ -433,13 +399,11 @@ namespace SimpleReportLib {
 
 //---------------------------------------------------------------------------
 
-  void SimpleReportGenerator::insertHeaderAndFooter(int pageNum)
+  void SimpleReportGenerator::insertHeaderAndFooter(int idxPage)
   {
-    if (pageCount < 1) return;
+    if (pages.size() < 1) return;
 
-    if (pageNum < 0) pageNum = curPage;
-
-    QGraphicsScene* sc = page[pageNum];
+    QGraphicsScene* sc = (idxPage < 0) ? curPagePtr : pages[idxPage].get();
 
     auto headerStyle = styleLib.getStyle(DEFAULT_HEADER_STYLE_NAME);
     if (headerStyle == nullptr) headerStyle = styleLib.getStyle();
@@ -448,15 +412,15 @@ namespace SimpleReportLib {
 
     // determine the actual text for the header / footer
     HeaderFooterStrings hfStrings;
-    if (headerFooter[pageNum] != nullptr)
+    if (headerFooter[idxPage] != nullptr)
     {
-      hfStrings = *(headerFooter[pageNum]);
+      hfStrings = *(headerFooter[idxPage]);
     } else {
       hfStrings = globalHeaderFooter;
     }
 
     // insert actual date, time, page numbers, etc
-    hfStrings.substTokens(pageNum, pageCount);
+    hfStrings.substTokens((idxPage < 0) ? idxCurPage : idxPage, pages.size());
 
     // write out the text for the header
     if (!(hfStrings.hl.isEmpty()))
@@ -503,8 +467,8 @@ namespace SimpleReportLib {
 
   void SimpleReportGenerator::applyHeaderAndFooterOnAllPages()
   {
-    if (pageCount < 0) return;
-    for (int pg = 0; pg < pageCount; ++pg) insertHeaderAndFooter(pg);
+    if (pages.empty()) return;
+    for (int pg = 0; pg < pages.size(); ++pg) insertHeaderAndFooter(pg);
   }
 
   //---------------------------------------------------------------------------
@@ -651,8 +615,7 @@ namespace SimpleReportLib {
   {
     // we need a QGraphicsScene; if none has been created yet, we return an
     // error value
-    if (pageCount < 0) return -1;
-    QGraphicsScene* sc = page[curPage];
+    if (curPagePtr == nullptr) return -1;
 
     // get the style
     auto style = styleLib.getStyle(styleName);
@@ -666,9 +629,9 @@ namespace SimpleReportLib {
 
     // add the text to the scene, determine the heigth and
     // immediately remove it
-    QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(txt, *fnt);
+    QGraphicsSimpleTextItem* txtItem = curPagePtr->addSimpleText(txt, *fnt);
     double result = txtItem->boundingRect().height();
-    sc->removeItem(txtItem);
+    curPagePtr->removeItem(txtItem);
     delete txtItem;
 
     return result;
@@ -678,7 +641,7 @@ namespace SimpleReportLib {
 
   void SimpleReportGenerator::drawLine_internalUnits(double x0, double y0, double x1, double y1, LINE_TYPE lt) const
   {
-    QGraphicsLineItem* line = page[curPage]->addLine(x0, y0, x1, y1);
+    QGraphicsLineItem* line = curPagePtr->addLine(x0, y0, x1, y1);
     QPen p = lineType2Pen(lt);
     line->setPen(p);
   }
@@ -713,8 +676,7 @@ namespace SimpleReportLib {
       fnt = *(style->getFont());
     }
 
-    QGraphicsScene* pg = page[curPage];
-    QGraphicsSimpleTextItem* txtItem = pg->addSimpleText(txt, fnt);
+    QGraphicsSimpleTextItem* txtItem = curPagePtr->addSimpleText(txt, fnt);
 
     return setTextPosAligned(x0, y0, txtItem, align);
   }
@@ -768,7 +730,7 @@ namespace SimpleReportLib {
   QGraphicsSimpleTextItem*SimpleReportGenerator::addStyledTextItem(const QString& txt, const TextStyle* style) const
   {
     // return null if we have no valid page
-    if (curPage < 0) return nullptr;
+    if (curPagePtr == nullptr) return nullptr;
 
     // Select the right font
     QFont fnt;
@@ -779,8 +741,7 @@ namespace SimpleReportLib {
       fnt = *(style->getFont());
     }
 
-    QGraphicsScene* pg = page[curPage];
-    return pg->addSimpleText(txt, fnt);
+    return curPagePtr->addSimpleText(txt, fnt);
   }
 
   //---------------------------------------------------------------------------
@@ -868,14 +829,13 @@ namespace SimpleReportLib {
   void SimpleReportGenerator::drawRect__internalUnits(const QRectF& rect, LINE_TYPE lt, const QColor& fillColor) const
   {
     // return if we have no valid page
-    if (curPage < 0) return;
+    if (curPagePtr == nullptr) return;
 
     QPen pen = lineType2Pen(lt);
     QBrush brush = QBrush(fillColor);
 
     // add the rectangle to the scene
-    QGraphicsScene* pg = page[curPage];
-    pg->addRect(rect, pen, brush);
+    curPagePtr->addRect(rect, pen, brush);
   }
 
   //---------------------------------------------------------------------------
@@ -971,8 +931,7 @@ namespace SimpleReportLib {
   {
     // we need a QGraphicsScene; if none has been created yet, we return an
     // error value
-    if (pageCount < 0) return QSizeF();
-    QGraphicsScene* sc = page[curPage];
+    if (curPagePtr == nullptr) return QSizeF();
 
     // get the style
     if (style == nullptr) style = styleLib.getStyle();
@@ -980,9 +939,9 @@ namespace SimpleReportLib {
 
     // add the text to the scene, determine the size and
     // immediately remove it
-    QGraphicsSimpleTextItem* txtItem = sc->addSimpleText(txt, *fnt);
+    QGraphicsSimpleTextItem* txtItem = curPagePtr->addSimpleText(txt, *fnt);
     QSizeF result_internalUnits = txtItem->boundingRect().size();
-    sc->removeItem(txtItem);
+    curPagePtr->removeItem(txtItem);
     delete txtItem;
 
     // convert internal units to external units (mm) and return the result

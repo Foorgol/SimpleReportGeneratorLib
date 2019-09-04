@@ -35,7 +35,7 @@ SimpleReportViewer::SimpleReportViewer(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  ui->sbPage->setMaximum(MAX_NUM_PAGES);
+  ui->sbPage->setMaximum(42);  // dummy value, will be overwritten by setReport()
   //ui->sbPage->setValue(1);
 
   ui->gv->setBackgroundBrush(QBrush(Qt::lightGray));
