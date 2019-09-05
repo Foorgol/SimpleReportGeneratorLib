@@ -25,6 +25,8 @@
 #include <QGraphicsSimpleTextItem>
 #include <QGraphicsScene>
 #include <QStack>
+#include <QtSvg/QSvgRenderer>
+#include <QtSvg/QGraphicsSvgItem>
 
 //#include "simplereportgenerator_global.h"
 #include "TabSet.h"
@@ -73,6 +75,22 @@ namespace SimpleReportLib {
     BOTTOM_CENTER,
     BOTTOM_RIGHT
   };
+
+  /** \returns the coordinates of the top left corner of an item with a given size and a given
+   * reference point for the item
+   */
+  QPointF basePoint2TopLeft(
+      const QPointF& refPoint,   ///< an absolute reference point
+      RECT_CORNER refPointAlignment,   ///< the location of the reference point within the bounding box
+      const QSizeF& size   ///< width and height of the bounding box
+      );
+
+  /** \returns the coordinates of a given corner of a rectangle
+   */
+  QPointF calcRectCorner(
+      const QRectF& rect,   ///< the input rectangle (x0, y0, width, height)
+      RECT_CORNER corner   ///< the corner that shall be caculated
+      );
 
   class HeaderFooterStrings
   {
@@ -185,6 +203,38 @@ namespace SimpleReportLib {
 
     void drawRect(const QRectF& rect, LINE_TYPE lt=MED, const QColor& fillColor = QColor(255, 255, 255)) const;
 
+    /** \brief Inserts an SVG image
+     *
+     * \returns the actual bouding box of the SVG image; if empty, the SVG data could not be parsed.
+     */
+    QRectF addSVG_byData_scaleF(
+        const QPointF& basePoint,   ///< the reference point for the insertion in external coordinates
+        RECT_CORNER basePointAlignment,   ///< which relative point the reference coordinate denotes
+        const std::string& svgContent,   ///< the SVG data to be rendered (NOT the file name or resource name!)
+        double scaleFac = 1.0   ///< a scale factor for the SVG (without accounting for the basic ACCURACY_FAC)
+        );
+
+    /** \brief Inserts an SVG image
+     *
+     * \returns the actual bouding box of the SVG image; if empty, the SVG data could not be parsed.
+     */
+    QRectF addSVG_byData_setW(
+        const QPointF& basePoint,   ///< the reference point for the insertion in external coordinates
+        RECT_CORNER basePointAlignment,   ///< which relative point the reference coordinate denotes
+        const std::string& svgContent,   ///< the SVG data to be rendered (NOT the file name or resource name!)
+        double width_mm = 0.0   ///< proportionally scale the SVG to a given width (<= 0: use original size)
+        );
+
+    /** \brief Inserts an SVG image
+     *
+     * \returns the actual bouding box of the SVG image; if empty, the SVG data could not be parsed.
+     */
+    QRectF addSVG_byData_setH(const QPointF& basePoint,   ///< the reference point for the insertion in external coordinates
+        RECT_CORNER basePointAlignment,   ///< which relative point the reference coordinate denotes
+        const string& svgContent,   ///< the SVG data to be rendered (NOT the file name or resource name!)
+        double height_mm = 0.0   ///< proportionally scale the SVG to a given height (<= 0: use original size)
+        );
+
     // disable copy constructor, just for testing
     SimpleReportGenerator(const SimpleReportGenerator &orig) = delete;
 
@@ -192,8 +242,27 @@ namespace SimpleReportLib {
     // the text to the scene
     QSizeF getTextDimensions_MM(const QString& txt, const TextStyle* style);
 
-    // calculate the position of a corner of a rectangle
-    QPointF calcRectCorner(const QRectF& rect, RECT_CORNER corner) const;
+  protected:
+    /** \brief Tries to parse the provided SVG data by instantiating a new SVG renderer; links the renderer
+     * to a new SVG graphics item if successful.
+     *
+     * The item is unmodified (no scaling, etc) and is not yet added to the scene.
+     *
+     * The caller has to take ownership of the item
+     */
+    std::unique_ptr<QGraphicsSvgItem> prepSvgItem(
+        const std::string& svgContent   ///< the SVG data to be rendered (NOT the file name or resource name!)
+        );
+
+    /** \brief Actually adds a previously prepared item to the current page
+     *
+     * \returns the actual bouding box of the SVG image
+     */
+    QRectF addSVG(
+        const QPointF& basePoint,   ///< the reference point for the insertion in external coordinates
+        RECT_CORNER basePointAlignment,   ///< which relative point the reference coordinate denotes
+        std::unique_ptr<QGraphicsSvgItem> svgItem   ///< the SVG item to be added (we take ownership)
+        );
 
   private:
     QRectF setTextPosAligned(double x, double y, QGraphicsSimpleTextItem* txt, HOR_TXT_ALIGNMENT align=LEFT) const;
@@ -221,6 +290,8 @@ namespace SimpleReportLib {
     std::vector<std::unique_ptr<QGraphicsScene>> pages;
     std::vector<std::unique_ptr<HeaderFooterStrings>> headerFooter;
     HeaderFooterStrings globalHeaderFooter;
+
+    std::vector<std::unique_ptr<QSvgRenderer>> svgRenderers;
 
     QPen thinPen;
     QPen mediumPen;

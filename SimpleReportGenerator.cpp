@@ -20,10 +20,12 @@
 
 #include <stdexcept>
 #include <assert.h>
+#include <iostream>
 
 #include <QGraphicsLineItem>
 #include <QHash>
 #include <QDateTime>
+#include <QtSvg/QGraphicsSvgItem>
 
 using namespace std;
 
@@ -927,6 +929,64 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
+  QRectF SimpleReportGenerator::addSVG_byData_scaleF(const QPointF& basePoint, RECT_CORNER basePointAlignment, const string& svgContent, double scaleFac)
+  {
+    if (!curPagePtr) return QRectF{};
+    // prep a new SVG item
+    std::unique_ptr<QGraphicsSvgItem> svgItem = std::move(prepSvgItem(svgContent));
+    if (!svgItem) return QRectF{};
+
+    // apply the scaling
+    if (scaleFac > 0) svgItem->setScale(scaleFac * svgItem->scale());
+
+    // actually add it to the scene
+    return addSVG(basePoint, basePointAlignment, std::move(svgItem));
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::addSVG_byData_setW(const QPointF& basePoint, RECT_CORNER basePointAlignment, const string& svgContent, double width_mm)
+  {
+    if (!curPagePtr) return QRectF{};
+    // prep a new SVG item
+    std::unique_ptr<QGraphicsSvgItem> svgItem = std::move(prepSvgItem(svgContent));
+    if (!svgItem) return QRectF{};
+
+    if (width_mm <= 0) return addSVG(basePoint, basePointAlignment, std::move(svgItem));
+
+    // scale
+    double wInternal = width_mm * ACCURACY_FAC;
+    auto bb = svgItem->mapRectToScene(svgItem->boundingRect());  // item's size in scene coordinates
+    double fac = wInternal / bb.width();
+    svgItem->setScale(svgItem->scale() * fac);
+
+    // actually add it to the scene
+    return addSVG(basePoint, basePointAlignment, std::move(svgItem));
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::addSVG_byData_setH(const QPointF& basePoint, RECT_CORNER basePointAlignment, const string& svgContent, double height_mm)
+  {
+    if (!curPagePtr) return QRectF{};
+    // prep a new SVG item
+    std::unique_ptr<QGraphicsSvgItem> svgItem = std::move(prepSvgItem(svgContent));
+    if (!svgItem) return QRectF{};
+
+    if (height_mm <= 0) return addSVG(basePoint, basePointAlignment, std::move(svgItem));
+
+    // scale
+    double hInternal = height_mm * ACCURACY_FAC;
+    auto bb = svgItem->mapRectToScene(svgItem->boundingRect());  // item's size in scene coordinates
+    double fac = hInternal / bb.height();
+    svgItem->setScale(svgItem->scale() * fac);
+
+    // actually add it to the scene
+    return addSVG(basePoint, basePointAlignment, std::move(svgItem));
+  }
+
+  //---------------------------------------------------------------------------
+
   QSizeF SimpleReportGenerator::getTextDimensions_MM(const QString& txt, const TextStyle* style)
   {
     // we need a QGraphicsScene; if none has been created yet, we return an
@@ -950,7 +1010,77 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  QPointF SimpleReportGenerator::calcRectCorner(const QRectF &rect, RECT_CORNER corner) const
+  std::unique_ptr<QGraphicsSvgItem> SimpleReportGenerator::prepSvgItem(const string& svgContent)
+  {
+    // create a new, empty SVG renderer
+    auto upRenderer = make_unique<QSvgRenderer>();
+    if (!upRenderer) return nullptr;
+    auto renderer = upRenderer.get();
+
+    // try to load the provided data
+    QByteArray rawSvg{svgContent.c_str(), static_cast<int>(svgContent.size())};
+    if (!renderer->load(rawSvg))
+    {
+      return nullptr;
+    }
+
+    // loading was successful --> store the renderer in the renderer list
+    svgRenderers.push_back(std::move(upRenderer));
+
+    // create a SVG graphics item
+    auto svgItem = make_unique<QGraphicsSvgItem>();
+    svgItem->setSharedRenderer(renderer);
+
+    return svgItem;
+  }
+
+  //---------------------------------------------------------------------------
+
+  QRectF SimpleReportGenerator::addSVG(const QPointF& basePoint, RECT_CORNER basePointAlignment, std::unique_ptr<QGraphicsSvgItem> svgItem)
+  {
+    if (!curPagePtr) return QRectF{};
+
+    // determine the scaled size of the item
+    auto bbox = svgItem->boundingRect();
+    double w = bbox.width();
+    double h = bbox.height();
+
+    // calculate and assign the top left origin
+    QPointF topLeft = basePoint2TopLeft(basePoint * ACCURACY_FAC, basePointAlignment, bbox.size());
+    svgItem->setPos(topLeft);
+
+    // calculate the bounding box in internal coordinates
+    auto sceneRect = svgItem->mapRectToScene(svgItem->boundingRect());
+
+    // add it to the scene
+    curPagePtr->addItem(svgItem.release());  // the scene takes ownership
+
+    // return the bounding box in external coordinates
+    return QRectF{sceneRect.topLeft() / ACCURACY_FAC, sceneRect.size() / ACCURACY_FAC};
+  }
+
+  //---------------------------------------------------------------------------
+
+  double SimpleReportGenerator::lineType2Width__internalUnits(LINE_TYPE lt) const
+  {
+    double lineWidth = THIN_LINE_WIDTH__MM;
+    if (lt == MED) lineWidth = MEDIUM_LINE_WIDTH__MM;
+    if (lt == THICK) lineWidth = THICK_LINE_WIDTH__MM;
+    return lineWidth * ACCURACY_FAC;
+  }
+
+  //---------------------------------------------------------------------------
+
+  QPen SimpleReportGenerator::lineType2Pen(LINE_TYPE lt, const QColor& penCol, Qt::PenStyle style) const
+  {
+    double lw = lineType2Width__internalUnits(lt);
+    QBrush br{penCol};
+    return QPen{br, lw, style};
+  }
+
+  //---------------------------------------------------------------------------
+
+  QPointF calcRectCorner(const QRectF& rect, RECT_CORNER corner)
   {
     QPointF tmp;
     switch (corner)
@@ -997,22 +1127,47 @@ namespace SimpleReportLib {
 
   //---------------------------------------------------------------------------
 
-  double SimpleReportGenerator::lineType2Width__internalUnits(LINE_TYPE lt) const
+  QPointF basePoint2TopLeft(const QPointF& refPoint, RECT_CORNER refPointAlignment, const QSizeF& size)
   {
-    double lineWidth = THIN_LINE_WIDTH__MM;
-    if (lt == MED) lineWidth = MEDIUM_LINE_WIDTH__MM;
-    if (lt == THICK) lineWidth = THICK_LINE_WIDTH__MM;
-    return lineWidth * ACCURACY_FAC;
+    const double xRef = refPoint.x();
+    const double yRef = refPoint.y();
+    const double w = size.width();
+    const double h = size.height();
+
+
+    switch (refPointAlignment)
+    {
+    case RECT_CORNER::TOP_LEFT:
+      return refPoint;
+
+    case RECT_CORNER::TOP_CENTER:
+      return QPointF{xRef - w / 2.0, yRef};
+
+    case RECT_CORNER::TOP_RIGHT:
+      return QPointF{xRef - w, yRef};
+
+    case RECT_CORNER::MID_LEFT:
+      return QPointF{xRef, yRef - h / 2.0};
+
+    case RECT_CORNER::CENTER:
+      return QPointF{xRef - w / 2.0, yRef - h / 2.0};
+
+    case RECT_CORNER::MID_RIGHT:
+      return QPointF{xRef - w, yRef - h / 2.0};
+
+    case RECT_CORNER::BOTTOM_LEFT:
+      return QPointF{xRef, yRef - h};
+      break;
+
+    case RECT_CORNER::BOTTOM_CENTER:
+      return QPointF{xRef - w / 2.0, yRef - h};
+
+    case RECT_CORNER::BOTTOM_RIGHT:
+      return QPointF{xRef - w, yRef - h};
+    }
   }
 
-  //---------------------------------------------------------------------------
 
-  QPen SimpleReportGenerator::lineType2Pen(LINE_TYPE lt, const QColor& penCol, Qt::PenStyle style) const
-  {
-    double lw = lineType2Width__internalUnits(lt);
-    QBrush br{penCol};
-    return QPen{br, lw, style};
-  }
 
   //---------------------------------------------------------------------------
 

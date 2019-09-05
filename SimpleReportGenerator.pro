@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += widgets printsupport
+QT       += widgets printsupport svg
 
 TARGET = SimpleReportGenerator
 
