@@ -16,7 +16,7 @@ TEMPLATE = lib
 
 CONFIG += c++14 debug_and_release dll build_all
 
-VERSION = 0.3.1
+VERSION = 0.3.2
 
 DEFINES += SIMPLEREPORTGENERATOR_LIBRARY
 

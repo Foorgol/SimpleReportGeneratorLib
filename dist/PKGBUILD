@@ -1,5 +1,5 @@
 pkgname="libSimpleReportGenerator"
-pkgver=0.3.1
+pkgver=0.3.2
 pkgrel=1
 pkgdesc="A small lib for generating / viewing / printing simple reports with Qt"
 arch=('i686' 'x86_64')
