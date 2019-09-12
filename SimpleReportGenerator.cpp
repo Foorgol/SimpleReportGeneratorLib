@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <assert.h>
 #include <iostream>
+#include <math.h>
 
 #include <QGraphicsLineItem>
 #include <QHash>
@@ -1006,6 +1007,69 @@ namespace SimpleReportLib {
 
     // convert internal units to external units (mm) and return the result
     return (result_internalUnits / ACCURACY_FAC);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QSizeF SimpleReportGenerator::getTextDimensions_MM(const QString& txt, const double txtHeight_mm, bool isBold, const QString& fntName)
+  {
+    // we need a QGraphicsScene; if none has been created yet, we return an
+    // error value
+    if (curPagePtr == nullptr) return QSizeF{};
+
+    // validity checks
+    if (txtHeight_mm <= 0) return QSizeF{};
+    if (txt.isEmpty()) return  QSizeF{};
+
+    // locally memorize the last used font so that
+    // we don't have to create it time and again if
+    // we get multiple queries in a row
+    static std::unique_ptr<QFont> fnt;
+    static QString lastFntName{};
+    if (!fnt || (lastFntName != fntName))
+    {
+      fnt = make_unique<QFont>(fntName);
+      if (!fnt) return  QSizeF{};
+      lastFntName = fntName;
+    }
+    fnt->setPointSizeF(txtHeight_mm * ACCURACY_FAC);
+    fnt->setBold(isBold);
+    //result->setItalic(isItalics());
+
+    // add the text to the scene, determine the size and
+    // immediately remove it
+    unique_ptr<QGraphicsSimpleTextItem> txtItem{curPagePtr->addSimpleText(txt, *fnt)};
+    QSizeF result_internalUnits = txtItem->boundingRect().size();
+    curPagePtr->removeItem(txtItem.get());
+
+    // convert internal units to external units (mm) and return the result
+    return (result_internalUnits / ACCURACY_FAC);
+  }
+
+  //---------------------------------------------------------------------------
+
+  QString SimpleReportGenerator::shortenTextToWidth(const QString& txt, const double txtHeight_mm, bool isBold, const double targetWidth_mm, const QString& fntName)
+  {
+    QString result{txt};
+
+    while (!result.isEmpty())
+    {
+      auto sz = getTextDimensions_MM(result, txtHeight_mm, isBold, fntName);
+      if (sz.width() <= targetWidth_mm) return result;
+
+      //
+      // try some smart chopping... not just "one by one"
+      //
+
+      const double avgWidthPerChar = sz.width() / result.length();
+      const double deltaW = sz.width() - targetWidth_mm;
+      const double deltaChar = deltaW / avgWidthPerChar;
+      int nChop = (deltaChar > 3) ? (std::round(deltaChar - 2)) : 1;  // chop off less than calculated because avg. char width depends on the string
+      if (nChop <= 0) nChop = 1;
+      result.chop(nChop);
+    }
+
+    return QString{};
   }
 
   //---------------------------------------------------------------------------

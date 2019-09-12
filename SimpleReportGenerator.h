@@ -241,6 +241,20 @@ namespace SimpleReportLib {
     // determine the bounding box of a given text without adding
     // the text to the scene
     QSizeF getTextDimensions_MM(const QString& txt, const TextStyle* style);
+    QSizeF getTextDimensions_MM(const QString& txt, const double txtHeight_mm, bool isBold, const QString& fntName = "Arial");
+
+    /** \brief Takes an input string and a font definition and chops off
+     * characters from the string until it reaches a given max width
+     *
+     * \returns The shortened string
+     */
+    QString shortenTextToWidth(
+        const QString& txt,   ///< the input string that shall be chopped to size
+        const double txtHeight_mm,   ///< the height of the used font in mm
+        bool isBold,  ///< bold font on/off
+        const double targetWidth_mm,   ///< the permitted max. width
+        const QString& fntName = "Arial"   ///< the font that shall be used
+        );
 
   protected:
     /** \brief Tries to parse the provided SVG data by instantiating a new SVG renderer; links the renderer
